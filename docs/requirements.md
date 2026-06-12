@@ -29,6 +29,16 @@
 1. **数据格式必须兼容 Hermes** — 技能文件、记忆文件、会话 SQLite 格式互通
 2. **核心引擎逻辑对齐 Hermes** — ReAct 循环、错误恢复、上下文压缩流程保持一致
 
+## Clarifications
+
+### Session 2026-06-12
+
+- Q: 数据模型怎么定？ → A: 直接参考 Hermes 的 SQLite schema（`hermes_state.py` 中的 sessions 表、messages 表、FTS5 虚拟表结构）
+- Q: 测试策略怎么定？ → A: 用 Hermes 兼容性测试：Hermes 生成测试数据/输出，Rust 解析并验证结果一致。辅以 Rust 单元测试。
+- Q: 第一个目标平台是什么？ → A: CLI 桌面原生 Rust（开发最快、能力不受限），后续再扩展其他平台。
+- Q: 错误处理跨 FFI 怎么做？ → A: 统一 Error 枚举 + 错误码，跨 FFI 传递。各平台 SDK 翻译成自己语言的异常。
+- Q: 可观测性怎么做？ → A: `tracing` crate + 结构化日志 + span 追踪，支持按 session_id 过滤日志。
+
 ---
 
 ## 二、功能需求
@@ -104,7 +114,7 @@
 | MEM-01 | L1 核心记忆 MEMORY.md 读写 + 自动注入 | 文件 | Core Memory |
 | MEM-02 | L2 用户画像 USER.md 读写 | 文件 | User Profile |
 | MEM-03 | L3 技能记忆 skills/ 目录 + FTS5 索引 | 文件 + FTS5 | Skill Memory |
-| MEM-04 | L4 长期存储：SQLite 会话存档 + FTS5 全文搜索 | SQLite | `hermes_state.py` |
+| MEM-04 | L4 长期存储：SQLite 会话存档 + FTS5 全文搜索，schema 参考 Hermes (`hermes_state.py` 的 sessions/messages/FTS5 表结构) | SQLite | `hermes_state.py` |
 | MEM-05 | 记忆注入：每次会话自动加载 L1-L3 | — | memory_manager |
 | MEM-06 | Context Engine：会话中动态注入上下文 | — | `context_engine.py` |
 | MEM-07 | Background Review：每轮后异步审查 → 生成技能/记忆 | — | `background_review.py` |
@@ -198,7 +208,17 @@
 | PF-05 | Android .so (strip) | < 15MB |
 | PF-06 | 空闲内存 | < 10MB RSS |
 
-### 3.3 兼容性
+### 3.3 可观测性
+
+| ID | 需求 | 技术 | 优先级 |
+|----|------|------|--------|
+| OB-01 | 结构化日志 + span 追踪 | `tracing` crate | P0 |
+| OB-02 | 按 session_id 过滤日志 | tracing subscriber | P0 |
+| OB-03 | 记录每轮 LLM 调用（模型、耗时、token 数） | tracing span | P0 |
+| OB-04 | 记录每次工具调用（名称、参数、结果、耗时） | tracing span | P0 |
+| OB-05 | 错误链路追踪（从 API 错误到恢复策略到最终结果） | tracing error chain | P1 |
+
+### 3.4 兼容性
 
 | ID | 需求 | 优先级 |
 |----|------|--------|
@@ -209,7 +229,7 @@
 | CP-05 | MCP 协议 100% 兼容 (JSON-RPC 2.0) | P0 |
 | CP-06 | OpenAI API 格式兼容 | P0 |
 
-### 3.4 安全
+### 3.5 安全
 
 | ID | 需求 | 优先级 |
 |----|------|--------|
@@ -219,7 +239,7 @@
 | SF-04 | 工具调用审批 (HITL) | P1 |
 | SF-05 | 基础提示注入检测 | P2 |
 
-### 3.5 SDK API 设计
+### 3.6 SDK API 设计
 
 | ID | 需求 | 优先级 |
 |----|------|--------|
@@ -231,8 +251,9 @@
 | API-06 | 技能操作：列表/学习/删除/搜索 | P0 |
 | API-07 | MCP 服务器管理：添加/移除/列表 | P0 |
 | API-08 | Profile 管理：创建/切换/列表 | P0 |
-| API-09 | 事件回调：on_tool_call, on_error, on_turn_complete | P1 |
-| API-10 | 配置持久化 | P1 |
+| API-09 | 统一 Error 枚举 + 错误码（跨 FFI 传递，各平台翻译为原生异常） | P0 |
+| API-10 | 事件回调：on_tool_call, on_error, on_turn_complete | P1 |
+| API-11 | 配置持久化 | P1 |
 
 ---
 
@@ -269,7 +290,7 @@
 
 ## 五、验收标准
 
-### MVP 验收 (Phase 1-3，≈ 10-14 周)
+### MVP 验收 (Phase 1-3，≈ 10-14 周，CLI 桌面原生 Rust)
 
 ```
 ✅ ReAct 循环可运行（3 API modes）
@@ -281,7 +302,8 @@
 ✅ Context Compression 可用
 ✅ Prompt Caching 正确
 ✅ CLI Demo 可对话 + 流式 + 工具调用
-✅ 核心测试覆盖率 > 70%
+✅ Hermes 兼容性测试：Hermes 生成测试数据，Rust 解析结果一致
+✅ 核心 Rust 单元测试覆盖率 > 70%
 ```
 
 ### 完整版验收 (Phase 1-6，≈ 19-28 周)
