@@ -1,0 +1,21 @@
+Aether — Cross-platform Agent SDK
+===================================
+
+This product includes software developed by Nous Research:
+
+  Hermes Agent (https://github.com/NousResearch/hermes-agent)
+  Copyright (c) 2025 Nous Research
+  Licensed under the MIT License
+
+Aether is a clean Rust reimplementation of the Hermes Agent architecture,
+designed for cross-platform deployment (Android, iOS, Windows, macOS, Linux, Web).
+The architecture, agent loop design, memory system, skill format, and learning
+loop concepts are derived from Hermes Agent, but all code is independently
+written in Rust.
+
+Portions of this product's design and behavior are inspired by Hermes Agent's
+source code (Python), reviewed for architectural understanding and reimplemented
+in Rust with platform-native idioms.
+
+This product is not affiliated with, endorsed by, or connected to Nous Research.
+Hermes Agent is a trademark of Nous Research.

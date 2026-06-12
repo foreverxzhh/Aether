@@ -1,0 +1,24 @@
+# Rust
+/target/
+**/*.rs.bk
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build artifacts
+*.wasm
+*.so
+*.dylib
+*.dll
+*.a
+
+# Local config
+.env
+*.local
