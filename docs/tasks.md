@@ -1,360 +1,361 @@
-# Tasks: Aether Cross-platform Agent SDK (Phase 1 — Core Engine)
+# 任务列表：Aether 跨平台 Agent SDK
 
-**Input**: `docs/requirements.md` (spec), `docs/implementation-plan.md` (plan)
-**Prerequisites**: Rust toolchain, Hermes Agent v0.16.0 source at `../hermes/`
-**Tests**: Hermes compatibility tests (Hermes generates test data, Rust parses and validates)
-
----
-
-## Format: `[ID] [P?] [Story] Description`
-
-- **[P]**: Can run in parallel (different files, no dependencies)
-- **[Story]**: Which user story this task belongs to
-- Include exact file paths in descriptions
+**输入**: `docs/requirements.md`（需求规格）、`docs/implementation-plan.md`（实现方案）
+**前置条件**: Rust 工具链已安装，Hermes Agent v0.16.0 源码在 `../hermes/`
+**测试策略**: Hermes 兼容性测试（Hermes 生成测试数据，Rust 解析并验证一致性）
 
 ---
 
-## Phase 1: Setup
+## 格式说明: `[ID] [P?] [Story] 任务描述`
 
-**Purpose**: Project initialization and basic structure
-
-- [ ] T001 Create Aether project root with Cargo workspace in `Aether/Cargo.toml`
-- [ ] T002 [P] Create `agent-core` crate with `Cargo.toml` (dependencies: tokio, reqwest, serde, serde_json, rusqlite, tracing, async-trait, uuid, thiserror)
-- [ ] T003 [P] Create `agent-bindings` crate with `Cargo.toml` (dependencies: uniffi, wasm-bindgen)
-- [ ] T004 [P] Configure Rust toolchain (`rust-toolchain.toml`) with nightly features
-- [ ] T005 [P] Set up tracing subscriber (`tracing-subscriber`) in `agent-core/src/lib.rs`
-- [ ] T006 Add `.gitignore` rules for Rust targets, IDE, OS files
-
-**Checkpoint**: `cargo build --workspace` compiles successfully
+- **无标记**: 顺序执行（有依赖关系）
+- **[P]**: 可并行（不同文件，无依赖）
+- **[Story]**: 所属用户故事（如 US1, US2）
+- 每条任务包含明确的文件路径
 
 ---
 
-## Phase 2: Foundational (Blocking Prerequisites)
+## Phase 1：项目初始化
 
-**Purpose**: Core data types, error system, traits that ALL user stories depend on
+**目标**: 搭建 Rust 工作空间，可编译通过
 
-### Core Data Types
+- [ ] T001 创建 Aether 根目录下的 Cargo 工作空间 `Aether/Cargo.toml`
+- [ ] T002 [P] 创建 `agent-core` crate 并配置 `Cargo.toml`（依赖：tokio, reqwest, serde, serde_json, rusqlite, tracing, async-trait, uuid, thiserror）
+- [ ] T003 [P] 创建 `agent-bindings` crate 并配置 `Cargo.toml`（依赖：uniffi, wasm-bindgen）
+- [ ] T004 [P] 配置 Rust 工具链 `rust-toolchain.toml`
+- [ ] T005 [P] 在 `agent-core/src/lib.rs` 中初始化 tracing subscriber
+- [ ] T006 添加 `.gitignore` 规则（Rust target、IDE、操作系统文件）
 
-- [ ] T007 [P] Define Message types (System/User/Assistant/Tool) in `agent-core/src/types/message.rs`
-- [ ] T008 [P] Define ToolCall/ToolResult types in `agent-core/src/types/tool.rs`
-- [ ] T009 [P] Define ModelResponse (text, tool_calls, finish_reason) in `agent-core/src/types/model.rs`
-- [ ] T010 [P] Define AgentConfig struct (~60 fields, Builder pattern) in `agent-core/src/config.rs`
-
-### Error System
-
-- [ ] T011 [P] Define unified Error enum (`AetherError`) with error codes in `agent-core/src/error.rs`
-- [ ] T012 [P] Implement `Display` and `From` conversions for AetherError
-
-### Core Traits
-
-- [ ] T013 [P] Define `ChatModel` trait (invoke, stream) in `agent-core/src/llm/mod.rs`
-- [ ] T014 [P] Define `Tool` trait (name, description, parameters, call) in `agent-core/src/tools/mod.rs`
-- [ ] T015 [P] Define `Memory` trait (add, get_context, clear) in `agent-core/src/memory/mod.rs`
-- [ ] T016 [P] Define `SessionStore` trait (save, load, search, delete) in `agent-core/src/memory/state.rs`
-- [ ] T017 [P] Define `SkillStore` trait (list, get, save, delete, search) in `agent-core/src/skills/mod.rs`
-
-### Observability
-
-- [ ] T018 Initialize tracing spans for agent lifecycle (agent_run, llm_call, tool_call) in `agent-core/src/tracing.rs`
-
-**Checkpoint**: All core traits compile, AetherError usable across all modules
+**检查点**: `cargo build --workspace` 编译通过
 
 ---
 
-## Phase 3: User Story 1 — Agent Engine (Priority: P0) 🎯 MVP
+## Phase 2：基础设施（阻塞所有后续任务）
 
-**Goal**: Core ReAct loop that can converse with LLM, call tools, handle errors, stream responses
+**目标**: 核心数据类型、错误系统、trait 定义——所有用户故事都依赖的基础
 
-**Independent Test**: Hermes compatibility test: run same prompt through Hermes and Aether CLI, compare final response structure
+### 核心数据类型
 
-### Implementation: LLM Providers
+- [ ] T007 [P] 定义 Message 类型（System/User/Assistant/Tool）在 `agent-core/src/types/message.rs`
+- [ ] T008 [P] 定义 ToolCall/ToolResult 类型在 `agent-core/src/types/tool.rs`
+- [ ] T009 [P] 定义 ModelResponse（text, tool_calls, finish_reason）在 `agent-core/src/types/model.rs`
+- [ ] T010 [P] 定义 AgentConfig 结构（~60 字段，Builder 模式）在 `agent-core/src/config.rs`
 
-- [ ] T019 [P] [US1] Implement OpenAI Chat Completions provider in `agent-core/src/llm/openai.rs`
-- [ ] T020 [P] [US1] Implement Anthropic Messages provider in `agent-core/src/llm/anthropic.rs`
-- [ ] T021 [P] [US1] Implement Ollama provider (OpenAI-compatible) in `agent-core/src/llm/ollama.rs`
-- [ ] T022 [US1] Implement generic OpenAI-compatible adapter in `agent-core/src/llm/provider.rs`
+### 错误系统
 
-### Implementation: Agent Loop
+- [ ] T011 [P] 定义统一的 Error 枚举（`AetherError`）+ 错误码在 `agent-core/src/error.rs`
+- [ ] T012 [P] 为 AetherError 实现 `Display` 和 `From` 转换
 
-- [ ] T023 [P] [US1] Build multi-layer system prompt assembler in `agent-core/src/prompt.rs`
-- [ ] T024 [US1] Implement AIAgent struct with Builder pattern in `agent-core/src/agent.rs`
-- [ ] T025 [US1] Implement `run_conversation()` ReAct loop in `agent-core/src/loop.rs`
-- [ ] T026 [P] [US1] Implement 3 API mode dispatch (chat_completions/anthropic_messages/codex_responses) in `agent-core/src/loop.rs`
-- [ ] T027 [P] [US1] Implement IterationBudget (AtomicUsize, refund logic) in `agent-core/src/budget.rs`
-- [ ] T028 [P] [US1] Implement CircuitBreaker (tool signature hash + consecutive detection) in `agent-core/src/breaker.rs`
-- [ ] T029 [US1] Implement streaming response (SSE parsing + interrupt) in `agent-core/src/loop.rs`
+### 核心 Trait
 
-### Implementation: Error Recovery
+- [ ] T013 [P] 定义 `ChatModel` trait（invoke, stream）在 `agent-core/src/llm/mod.rs`
+- [ ] T014 [P] 定义 `Tool` trait（name, description, parameters, call）在 `agent-core/src/tools/mod.rs`
+- [ ] T015 [P] 定义 `Memory` trait（add, get_context, clear）在 `agent-core/src/memory/mod.rs`
+- [ ] T016 [P] 定义 `SessionStore` trait（save, load, search, delete）在 `agent-core/src/memory/state.rs`
+- [ ] T017 [P] 定义 `SkillStore` trait（list, get, save, delete, search）在 `agent-core/src/skills/mod.rs`
 
-- [ ] T030 [P] [US1] Implement error classification (empty response, truncation, invalid tool, provider error) in `agent-core/src/error.rs`
-- [ ] T031 [US1] Implement retry logic with jittered backoff in `agent-core/src/loop.rs`
-- [ ] T032 [US1] Implement graceful budget exhaustion handler in `agent-core/src/loop.rs`
+### 可观测性
 
-### Implementation: Context Engine
+- [ ] T018 初始化 Agent 生命周期 tracing spans（agent_run, llm_call, tool_call）在 `agent-core/src/tracing.rs`
 
-- [ ] T033 [US1] Implement ContextEngine (inject workspace files, recent tool results) in `agent-core/src/context.rs`
-
-### Implementation: CLI Demo
-
-- [ ] T034 [US1] Build minimal CLI entry point in `agent-bindings/src/bin/cli.rs` (reads prompt from args, runs agent, prints response)
-- [ ] T035 [US1] Build streaming CLI demo (stdin/stdout, real-time token output)
-
-### Implementation: Hermes Compatibility Tests
-
-- [ ] T036 [US1] Create test harness: run Hermes with test prompts, capture output, parse with Rust, compare results in `agent-core/tests/hermes_compat/mod.rs`
-
-**Checkpoint**: `cargo run --bin cli -- "hello"` → agent responds. Streaming works. Error recovery works.
+**检查点**: 所有核心 trait 编译通过，AetherError 可在所有模块中使用
 
 ---
 
-## Phase 4: User Story 2 — Tool System (Priority: P0)
+## Phase 3：用户故事 1 — Agent 引擎（优先级：P0）🎯 MVP
 
-**Goal**: Tool registry, toolset gating, core built-in tools (file, terminal, web)
+**目标**: 核心 ReAct 循环，能与 LLM 对话、调用工具、处理错误、流式输出
 
-**Independent Test**: Agent can use read_file + web_search + terminal tools in a single conversation
+**独立测试**: Hermes 兼容性测试：用同一 prompt 分别跑 Hermes 和 Aether CLI，对比最终响应结构
 
-### Implementation: Tool Registry
+### LLM 供应商
 
-- [ ] T037 [US2] Implement ToolRegistry (compile-time registration via `inventory` crate) in `agent-core/src/tools/registry.rs`
-- [ ] T038 [US2] Implement Toolset system (grouping + check_fn gating + 30s TTL cache) in `agent-core/src/tools/toolsets.rs`
-- [ ] T039 [US2] Implement JSON Schema auto-generation for tool parameters in `agent-core/src/tools/registry.rs`
-- [ ] T040 [US2] Implement dynamic_schema_overrides (runtime description updates) in `agent-core/src/tools/registry.rs`
-- [ ] T041 [US2] Implement runtime dynamic tool registration/deregistration in `agent-core/src/tools/registry.rs`
-- [ ] T042 [US2] Implement CircuitBreaker integration (tool signature tracking) in `agent-core/src/tools/registry.rs`
+- [ ] T019 [P] [US1] 实现 OpenAI Chat Completions 供应商在 `agent-core/src/llm/openai.rs`
+- [ ] T020 [P] [US1] 实现 Anthropic Messages 供应商在 `agent-core/src/llm/anthropic.rs`
+- [ ] T021 [P] [US1] 实现 Ollama 供应商（OpenAI 兼容协议）在 `agent-core/src/llm/ollama.rs`
+- [ ] T022 [US1] 实现通用 OpenAI 兼容适配器在 `agent-core/src/llm/provider.rs`
 
-### Implementation: File Tools
+### Agent 循环
 
-- [ ] T043 [P] [US2] Implement `read_file` tool in `agent-core/src/tools/file.rs`
-- [ ] T044 [P] [US2] Implement `write_file` tool in `agent-core/src/tools/file.rs`
-- [ ] T045 [P] [US2] Implement `patch` tool (diff-based editing) in `agent-core/src/tools/file.rs`
-- [ ] T046 [P] [US2] Implement `search_files` tool (glob + regex) in `agent-core/src/tools/file.rs`
+- [ ] T023 [P] [US1] 构建多层系统提示词组装器在 `agent-core/src/prompt.rs`
+- [ ] T024 [US1] 实现 AIAgent 结构（Builder 模式）在 `agent-core/src/agent.rs`
+- [ ] T025 [US1] 实现 `run_conversation()` ReAct 循环在 `agent-core/src/loop.rs`
+- [ ] T026 [P] [US1] 实现 3 种 API 模式分发（chat_completions/anthropic_messages/codex_responses）在 `agent-core/src/loop.rs`
+- [ ] T027 [P] [US1] 实现迭代预算控制（AtomicUsize，退还逻辑）在 `agent-core/src/budget.rs`
+- [ ] T028 [P] [US1] 实现熔断器（工具签名哈希 + 连续检测）在 `agent-core/src/breaker.rs`
+- [ ] T029 [US1] 实现流式响应（SSE 解析 + 可中断）在 `agent-core/src/loop.rs`
 
-### Implementation: Terminal Tool
+### 错误恢复
 
-- [ ] T047 [US2] Implement `terminal` tool (subprocess execution with `portable-pty`) in `agent-core/src/tools/terminal.rs`
-- [ ] T048 [US2] Add terminal safety checks (dangerous command filtering) in `agent-core/src/tools/terminal.rs`
+- [ ] T030 [P] [US1] 实现错误分类（空响应、截断、无效工具、供应商错误）在 `agent-core/src/error.rs`
+- [ ] T031 [US1] 实现带抖动的退避重试逻辑在 `agent-core/src/loop.rs`
+- [ ] T032 [US1] 实现迭代预算耗尽优雅处理在 `agent-core/src/loop.rs`
 
-### Implementation: Web Tools
+### 上下文引擎
 
-- [ ] T049 [P] [US2] Implement `web_search` tool in `agent-core/src/tools/web.rs`
-- [ ] T050 [P] [US2] Implement `web_extract` tool (HTML scraping) in `agent-core/src/tools/web.rs`
+- [ ] T033 [US1] 实现 ContextEngine（注入工作区文件、最近工具结果）在 `agent-core/src/context.rs`
 
-### Implementation: Hermes Compatibility Tests
+### CLI 演示
 
-- [ ] T051 [US2] Compatibility test: Hermes runs tools, Aether reads same tool schemas, compares structure in `agent-core/tests/hermes_compat/tools.rs`
+- [ ] T034 [US1] 构建最小 CLI 入口在 `agent-bindings/src/bin/cli.rs`（从参数读取 prompt，调用 agent，输出结果）
+- [ ] T035 [US1] 构建流式 CLI 演示在 `agent-bindings/src/bin/cli.rs`（stdin/stdout，实时输出 token）
 
-**Checkpoint**: Agent can read files, search code, run terminal commands, search web
+### Hermes 兼容性测试
 
----
+- [ ] T036 [US1] 创建测试框架：用 Hermes 跑测试 prompt，抓取输出，Rust 解析并对比结果在 `agent-core/tests/hermes_compat/mod.rs`
 
-## Phase 5: User Story 3 — Memory & Skills (Priority: P0)
-
-**Goal**: L1-L4 memory system, session storage (SQLite + FTS5), skill file management
-
-**Independent Test**: Agent remembers information from previous conversation (memory persists across sessions)
-
-### Implementation: Session Store
-
-- [ ] T052 [P] [US3] Implement SQLite session store in `agent-core/src/memory/state.rs` (schema matching Hermes `hermes_state.py`)
-- [ ] T053 [P] [US3] Implement FTS5 full-text search across session messages in `agent-core/src/memory/state.rs`
-- [ ] T054 [US3] Implement session chain (parent_session_id, compression splits) in `agent-core/src/memory/state.rs`
-
-### Implementation: Memory Manager (L1-L4)
-
-- [ ] T055 [US3] Implement MemoryManager orchestrating L1-L4 in `agent-core/src/memory/mod.rs`
-- [ ] T056 [P] [US3] Implement L1 Core Memory (MEMORY.md file read/write/auto-inject) in `agent-core/src/memory/core.rs`
-- [ ] T057 [P] [US3] Implement L2 User Profile (USER.md file read/write) in `agent-core/src/memory/profile.rs`
-- [ ] T058 [P] [US3] Implement L3 Skills index (FTS5 over skills/*.md) in `agent-core/src/memory/skills_index.rs`
-- [ ] T059 [US3] Implement L4 long-term storage session archiving in `agent-core/src/memory/state.rs`
-
-### Implementation: Skill System
-
-- [ ] T060 [US3] Implement agentskills.io frontmatter + Markdown parser in `agent-core/src/skills/mod.rs`
-- [ ] T061 [US3] Implement skill CRUD (list, view, create, update, delete) in `agent-core/src/skills/mod.rs`
-- [ ] T062 [US3] Implement skill search (name + FTS5) in `agent-core/src/skills/mod.rs`
-
-### Implementation: Memory/Skill Tools
-
-- [ ] T063 [US3] Implement `memory` tool (read/write memory) in `agent-core/src/tools/memory_tool.rs`
-- [ ] T064 [US3] Implement `skills_list`/`skill_view`/`skill_manage` tools in `agent-core/src/tools/skills.rs`
-
-### Implementation: Profile System
-
-- [ ] T065 [US3] Implement Profile system (isolated HERMES_HOME per profile) in `agent-core/src/profile.rs`
-
-### Implementation: Hermes Compatibility Tests
-
-- [ ] T066 [US3] Compatibility test: Hermes writes MEMORY.md/USER.md, Aether reads and parses correctly in `agent-core/tests/hermes_compat/memory.rs`
-
-**Checkpoint**: Agent remembers user preferences across sessions, can list/read skills
+**检查点**: `cargo run --bin cli -- "你好"` → Agent 回复。流式工作。错误恢复工作。
 
 ---
 
-## Phase 6: User Story 4 — Learning Loop & Compression (Priority: P0)
+## Phase 4：用户故事 2 — 工具系统（优先级：P0）
 
-**Goal**: Background Review auto-generates skills/memory, Context Compression splits long conversations
+**目标**: 工具注册表、工具集门控、核心内置工具（文件、终端、Web）
 
-**Independent Test**: Agent runs 3 turns with tool calls → Background Review thread fires → new skill appears in skills list
+**独立测试**: Agent 能在一次对话中同时使用 read_file + web_search + terminal 工具
 
-### Implementation: Context Compression
+### 工具注册表
 
-- [ ] T067 [US4] Implement token estimation (tiktoken equivalence) in `agent-core/src/compression/mod.rs`
-- [ ] T068 [US4] Implement compression logic: identify range → LLM summary (protect head+tail) in `agent-core/src/compression/mod.rs`
-- [ ] T069 [US4] Implement session splitting: new child session + parent_session_id chain in `agent-core/src/compression/mod.rs`
-- [ ] T070 [US4] Implement iteration budget refund on compression in `agent-core/src/compression/mod.rs`
+- [ ] T037 [US2] 实现 ToolRegistry（编译期注册，用 `inventory` crate）在 `agent-core/src/tools/registry.rs`
+- [ ] T038 [US2] 实现工具集系统（分组 + check_fn 门控 + 30 秒 TTL 缓存）在 `agent-core/src/tools/toolsets.rs`
+- [ ] T039 [US2] 实现工具参数的 JSON Schema 自动生成在 `agent-core/src/tools/registry.rs`
+- [ ] T040 [US2] 实现运行时动态 schema 覆盖（dynamic_schema_overrides）在 `agent-core/src/tools/registry.rs`
+- [ ] T041 [US2] 实现运行时工具动态注册/注销在 `agent-core/src/tools/registry.rs`
+- [ ] T042 [US2] 实现熔断器集成（工具签名追踪）在 `agent-core/src/tools/registry.rs`
 
-### Implementation: Prompt Caching
+### 文件工具
 
-- [ ] T071 [US4] Implement Anthropic cache_control marker logic in `agent-core/src/llm/caching.rs`
-- [ ] T072 [US4] Implement caching constraints (system prompt immutable mid-session, toolset frozen) in `agent-core/src/llm/caching.rs`
+- [ ] T043 [P] [US2] 实现 `read_file` 工具在 `agent-core/src/tools/file.rs`
+- [ ] T044 [P] [US2] 实现 `write_file` 工具在 `agent-core/src/tools/file.rs`
+- [ ] T045 [P] [US2] 实现 `patch` 工具（基于 diff 的编辑）在 `agent-core/src/tools/file.rs`
+- [ ] T046 [P] [US2] 实现 `search_files` 工具（glob + regex）在 `agent-core/src/tools/file.rs`
 
-### Implementation: Background Review
+### 终端工具
 
-- [ ] T073 [US4] Implement Background Review trigger logic (post-turn, check conditions) in `agent-core/src/memory/review.rs`
-- [ ] T074 [US4] Implement forked review agent (inherit parent config, restrict toolset to memory+skills) in `agent-core/src/memory/review.rs`
-- [ ] T075 [US4] Implement review prompts (memory review + skill review, ported from Hermes) in `agent-core/src/memory/review.rs`
+- [ ] T047 [US2] 实现 `terminal` 工具（子进程执行，`portable-pty`）在 `agent-core/src/tools/terminal.rs`
+- [ ] T048 [US2] 添加终端安全检查（危险命令过滤）在 `agent-core/src/tools/terminal.rs`
 
-### Implementation: Curator
+### Web 工具
 
-- [ ] T076 [US4] Implement Curator scheduler (idle detection, interval config, state persistence) in `agent-core/src/memory/curator.rs`
-- [ ] T077 [US4] Implement skill lifecycle transitions (active → stale → archived) in `agent-core/src/memory/curator.rs`
-- [ ] T078 [US4] Implement archive/restore mechanism in `agent-core/src/memory/curator.rs`
+- [ ] T049 [P] [US2] 实现 `web_search` 工具在 `agent-core/src/tools/web.rs`
+- [ ] T050 [P] [US2] 实现 `web_extract` 工具（HTML 页面抓取）在 `agent-core/src/tools/web.rs`
 
-### Implementation: Hermes Compatibility Tests
+### Hermes 兼容性测试
 
-- [ ] T079 [US4] Compatibility test: Hermes compressed session → Aether reads parent_session_id chain correctly in `agent-core/tests/hermes_compat/compression.rs`
+- [ ] T051 [US2] 兼容性测试：Hermes 跑工具，Aether 读取同一工具 schema，对比结构在 `agent-core/tests/hermes_compat/tools.rs`
 
-**Checkpoint**: Agent auto-creates skills from conversations, compresses long sessions
-
----
-
-## Phase 7: User Story 5 — MCP & Delegate (Priority: P0)
-
-**Goal**: MCP client/server protocol, sub-agent delegation
-
-**Independent Test**: Agent connects to an MCP server, discovers its tools, and calls one
-
-### Implementation: MCP Client
-
-- [ ] T080 [P] [US5] Implement MCP Client (stdio) — JSON-RPC over subprocess stdin/stdout in `agent-core/src/mcp/client_stdio.rs`
-- [ ] T081 [P] [US5] Implement MCP Client (HTTP/SSE) — JSON-RPC over HTTP in `agent-core/src/mcp/client_http.rs`
-- [ ] T082 [US5] Implement MCP tool discovery (server → tool schema mapping) in `agent-core/src/mcp/mod.rs`
-- [ ] T083 [US5] Implement dynamic tool list change notification in `agent-core/src/mcp/mod.rs`
-
-### Implementation: MCP OAuth
-
-- [ ] T084 [US5] Implement MCP OAuth flow (authorization, token refresh) in `agent-core/src/mcp/oauth.rs`
-
-### Implementation: MCP Server
-
-- [ ] T085 [US5] Implement MCP Server (expose Aether tools as MCP service) in `agent-core/src/mcp/server.rs`
-
-### Implementation: Delegate
-
-- [ ] T086 [US5] Implement sub-agent delegation (isolated context, restricted toolsets) in `agent-core/src/delegate.rs`
-- [ ] T087 [US5] Implement batch delegation (parallel sub-agents, result aggregation) in `agent-core/src/delegate.rs`
-
-**Checkpoint**: Agent can use MCP tools from external servers, delegate tasks to sub-agents
+**检查点**: Agent 可以读文件、搜索代码、执行终端命令、搜索网页
 
 ---
 
-## Phase 8: Cross-Platform Bindings (Priority: P0)
+## Phase 5：用户故事 3 — 记忆与技能系统（优先级：P0）
 
-**Goal**: UniFFI + WASM bindings so platform SDKs can call Aether core
+**目标**: L1-L4 分层记忆、SQLite 会话存储 + FTS5、技能文件管理
 
-**Independent Test**: TypeScript snippet imports WASM build, creates Agent, calls invoke()
+**独立测试**: Agent 记得上一轮对话的信息（记忆跨会话持久化）
 
-### Implementation: UniFFI
+### 会话存储
 
-- [ ] T088 [P] [BD] Define UniFFI UDL (`agent.udl`) with all exported types and functions in `agent-bindings/agent.udl`
-- [ ] T089 [BD] Implement `#[uniffi::export]` wrappers for Agent create/invoke/stream/save/load in `agent-bindings/src/uniffi.rs`
-- [ ] T090 [BD] Generate Kotlin bindings (`uniffi-bindgen kotlin`) and test in `agent-bindings/`
-- [ ] T091 [BD] Generate Swift bindings (`uniffi-bindgen swift`) and test in `agent-bindings/`
+- [ ] T052 [P] [US3] 实现 SQLite 会话存储在 `agent-core/src/memory/state.rs`（schema 匹配 Hermes `hermes_state.py`）
+- [ ] T053 [P] [US3] 实现跨会话消息的 FTS5 全文搜索在 `agent-core/src/memory/state.rs`
+- [ ] T054 [US3] 实现会话链（parent_session_id，压缩拆分）在 `agent-core/src/memory/state.rs`
 
-### Implementation: WASM
+### 记忆管理器（L1-L4）
 
-- [ ] T092 [BD] Implement WASM entry point (wasm-bindgen exports) in `agent-bindings/src/wasm.rs`
-- [ ] T093 [BD] Build WASM target (`wasm-pack build --target web`) in `agent-bindings/`
+- [ ] T055 [US3] 实现 MemoryManager（编排 L1-L4）在 `agent-core/src/memory/mod.rs`
+- [ ] T056 [P] [US3] 实现 L1 核心记忆（MEMORY.md 文件读写/自动注入）在 `agent-core/src/memory/core.rs`
+- [ ] T057 [P] [US3] 实现 L2 用户画像（USER.md 文件读写）在 `agent-core/src/memory/profile.rs`
+- [ ] T058 [P] [US3] 实现 L3 技能索引（skills/*.md 的 FTS5 搜索）在 `agent-core/src/memory/skills_index.rs`
+- [ ] T059 [US3] 实现 L4 长期存储（会话归档）在 `agent-core/src/memory/state.rs`
 
-### Implementation: CLI as Native Linux Binary
+### 技能系统
 
-- [ ] T094 [BD] Polish CLI binary for Linux/macOS in `agent-bindings/src/bin/cli.rs`
-- [ ] T095 [BD] Build CI pipeline for cross-platform targets in `scripts/build-all.sh`
+- [ ] T060 [US3] 实现 agentskills.io 格式的 frontmatter + Markdown 解析器在 `agent-core/src/skills/mod.rs`
+- [ ] T061 [US3] 实现技能 CRUD（列表、查看、创建、更新、删除）在 `agent-core/src/skills/mod.rs`
+- [ ] T062 [US3] 实现技能搜索（名称 + FTS5）在 `agent-core/src/skills/mod.rs`
 
-**Checkpoint**: WASM demo page loads Aether agent in browser. Kotlin/Swift bindings compile.
+### 记忆/技能工具
 
----
+- [ ] T063 [US3] 实现 `memory` 工具（读写记忆）在 `agent-core/src/tools/memory_tool.rs`
+- [ ] T064 [US3] 实现 `skills_list`/`skill_view`/`skill_manage` 工具在 `agent-core/src/tools/skills.rs`
 
-## Phase 9: Polish & Cross-Cutting Concerns
+### Profile 系统
 
-**Purpose**: Improvements that affect multiple user stories
+- [ ] T065 [US3] 实现 Profile 系统（每个 profile 有独立的 HERMES_HOME 路径）在 `agent-core/src/profile.rs`
 
-- [ ] T096 [P] Add comprehensive tracing spans across all modules in `agent-core/src/`
-- [ ] T097 [P] Add logging for each LLM call (model, tokens, duration) in `agent-core/src/llm/`
-- [ ] T098 [P] Add logging for each tool call (name, params, result, duration) in `agent-core/src/tools/`
-- [ ] T099 Add Hermes compatibility CI step (`python scripts/test_hermes_compat.py`) in `scripts/`
-- [ ] T100 Code cleanup and documentation pass across all modules
-- [ ] T101 Performance optimization: reduce cold start time < 50ms
-- [ ] T102 WASM binary size optimization: target < 5MB
+### Hermes 兼容性测试
 
----
+- [ ] T066 [US3] 兼容性测试：Hermes 写 MEMORY.md/USER.md，Aether 正确读取解析在 `agent-core/tests/hermes_compat/memory.rs`
 
-## Dependencies & Execution Order
-
-### Phase Dependencies
-
-| Phase | Depends On | Blocks |
-|-------|-----------|--------|
-| **P1: Setup** | — | All phases |
-| **P2: Foundational** | P1 | US1 (Phase 3) |
-| **P3: US1 Agent Engine** | P1+P2 | US2, US3, US4, US5 |
-| **P4: US2 Tool System** | P3 | — |
-| **P5: US3 Memory & Skills** | P3 | — |
-| **P6: US4 Learning Loop** | P3+P5 | — |
-| **P7: US5 MCP & Delegate** | P3+P4 | — |
-| **P8: Cross-Platform** | P3+P5 | — |
-| **P9: Polish** | All | — |
-
-### Within Each User Story
-
-- Core types → Traits → Implementation → Tools → Integration
-- Each story should be independently testable after completion
-
-### Parallel Opportunities
-
-- Phase 1 T002/T003/T004/T005 (all [P]) can run in parallel
-- Phase 2 T007-T017 (all [P]) can run in parallel
-- Phase 3 LLM providers T019/T020/T021 can run in parallel
-- Phase 4 T043-T050 (file/terminal/web tools) can run in parallel
-- Phase 5 T052/T053 (state/FTS5) can run in parallel
-- Phases 4-7 can technically run after Phase 3 completes (if team capacity)
+**检查点**: Agent 跨会话记住用户偏好，能列表/查看技能
 
 ---
 
-## Implementation Strategy
+## Phase 6：用户故事 4 — 学习闭环与上下文压缩（优先级：P0）
 
-### MVP First (Phase 1-3 Only)
+**目标**: Background Review 后台自动生成技能/记忆，Context Compression 拆分长对话
 
-1. Complete Phase 1: Setup → workspace compiles
-2. Complete Phase 2: Foundational → core traits done
-3. Complete Phase 3: US1 → Agent runs with CLI demo
-4. **STOP and VALIDATE**: CLI demo works, Hermes compat test passes
-5. MVP deliverable: working CLI agent with ReAct loop, file/web tools, basic streaming
+**独立测试**: Agent 跑 3 轮带工具的对话 → Background Review 线程启动 → 技能列表中出现新技能
 
-### Incremental Delivery
+### 上下文压缩
 
-1. Phase 1-3 → MVP CLI Agent (usable!)
-2. Phase 4 → Agent with full tool system
-3. Phase 5 → Agent with memory and skills
-4. Phase 6 → Self-learning agent
-5. Phase 7 → MCP-connected agent ecosystem
-6. Phase 8 → Cross-platform SDK
+- [ ] T067 [US4] 实现 token 估算（tiktoken 等价）在 `agent-core/src/compression/mod.rs`
+- [ ] T068 [US4] 实现压缩逻辑：确定范围 → LLM 摘要（保护头部+尾部）在 `agent-core/src/compression/mod.rs`
+- [ ] T069 [US4] 实现会话拆分：新建子会话 + parent_session_id 链在 `agent-core/src/compression/mod.rs`
+- [ ] T070 [US4] 实现压缩后迭代预算退还机制在 `agent-core/src/compression/mod.rs`
 
-### MVP Scope
+### Prompt 缓存
 
-**Phase 1-3 only** (≈ 4-6 weeks AI-assisted): A working CLI agent that can:
-- Converse with OpenAI/Anthropic/Ollama
-- Call file/terminal/web tools
-- Stream responses
-- Handle errors gracefully
-- Run Hermes compatibility tests
+- [ ] T071 [US4] 实现 Anthropic cache_control 标记逻辑在 `agent-core/src/llm/caching.rs`
+- [ ] T072 [US4] 实现缓存约束（会话期间系统提示词不可变、工具集不可变）在 `agent-core/src/llm/caching.rs`
+
+### Background Review
+
+- [ ] T073 [US4] 实现 Background Review 触发逻辑（每轮对话后，检查条件）在 `agent-core/src/memory/review.rs`
+- [ ] T074 [US4] 实现 fork 审查 Agent（继承父 Agent 配置，限制工具集为记忆+技能）在 `agent-core/src/memory/review.rs`
+- [ ] T075 [US4] 实现审查提示词（记忆审查 + 技能审查，从 Hermes 移植）在 `agent-core/src/memory/review.rs`
+
+### 技能策展人
+
+- [ ] T076 [US4] 实现 Curator 调度器（空闲检测，间隔配置，状态持久化）在 `agent-core/src/memory/curator.rs`
+- [ ] T077 [US4] 实现技能生命周期流转（活跃 → 陈旧 → 归档）在 `agent-core/src/memory/curator.rs`
+- [ ] T078 [US4] 实现归档/恢复机制在 `agent-core/src/memory/curator.rs`
+
+### Hermes 兼容性测试
+
+- [ ] T079 [US4] 兼容性测试：Hermes 压缩后的会话 → Aether 正确读取 parent_session_id 链在 `agent-core/tests/hermes_compat/compression.rs`
+
+**检查点**: Agent 自动从对话中创建技能，长对话自动压缩
+
+---
+
+## Phase 7：用户故事 5 — MCP 协议与子 Agent（优先级：P0）
+
+**目标**: MCP 客户端/服务器协议、子 Agent 委托
+
+**独立测试**: Agent 连接到一个 MCP 服务器，发现其工具，并调用其中一个
+
+### MCP 客户端
+
+- [ ] T080 [P] [US5] 实现 MCP Client（stdio）— 子进程 stdin/stdout 的 JSON-RPC 在 `agent-core/src/mcp/client_stdio.rs`
+- [ ] T081 [P] [US5] 实现 MCP Client（HTTP/SSE）— 基于 HTTP 的 JSON-RPC 在 `agent-core/src/mcp/client_http.rs`
+- [ ] T082 [US5] 实现 MCP 工具发现（服务器 → 工具 schema 映射）在 `agent-core/src/mcp/mod.rs`
+- [ ] T083 [US5] 实现工具列表变更的动态通知在 `agent-core/src/mcp/mod.rs`
+
+### MCP OAuth
+
+- [ ] T084 [US5] 实现 MCP OAuth 流程（授权、令牌刷新）在 `agent-core/src/mcp/oauth.rs`
+
+### MCP 服务器
+
+- [ ] T085 [US5] 实现 MCP Server（将 Aether 工具暴露为 MCP 服务）在 `agent-core/src/mcp/server.rs`
+
+### 子 Agent 委托
+
+- [ ] T086 [US5] 实现子 Agent 委托（隔离上下文，受限工具集）在 `agent-core/src/delegate.rs`
+- [ ] T087 [US5] 实现批量委托（并行子 Agent，结果聚合）在 `agent-core/src/delegate.rs`
+
+**检查点**: Agent 可以使用外部 MCP 服务器提供的工具，可以委托子 Agent 执行任务
+
+---
+
+## Phase 8：跨平台绑定（优先级：P0）
+
+**目标**: UniFFI + WASM 绑定，各平台 SDK 可调用 Aether 核心
+
+**独立测试**: TypeScript 片段导入 WASM 构建，创建 Agent，调用 invoke()
+
+### UniFFI 绑定
+
+- [ ] T088 [P] [BD] 定义 UniFFI UDL 文件 `agent.udl`（包含所有导出类型和函数）在 `agent-bindings/agent.udl`
+- [ ] T089 [BD] 实现 `#[uniffi::export]` 包装（Agent create/invoke/stream/save/load）在 `agent-bindings/src/uniffi.rs`
+- [ ] T090 [BD] 生成 Kotlin 绑定（`uniffi-bindgen kotlin`）并测试在 `agent-bindings/`
+- [ ] T091 [BD] 生成 Swift 绑定（`uniffi-bindgen swift`）并测试在 `agent-bindings/`
+
+### WASM 绑定
+
+- [ ] T092 [BD] 实现 WASM 入口（wasm-bindgen 导出）在 `agent-bindings/src/wasm.rs`
+- [ ] T093 [BD] 构建 WASM 目标（`wasm-pack build --target web`）在 `agent-bindings/`
+
+### CLI 多平台构建
+
+- [ ] T094 [BD] 打磨 CLI 二进制（Linux/macOS/Windows）在 `agent-bindings/src/bin/cli.rs`
+- [ ] T095 [BD] 搭建跨平台 CI 构建管线在 `scripts/build-all.sh`
+
+**检查点**: WASM 演示页面在浏览器中加载 Aether Agent，Kotlin/Swift 绑定编译通过
+
+---
+
+## Phase 9：收尾与优化
+
+**目标**: 跨模块的改进、性能优化、文档
+
+- [ ] T096 [P] 在所有模块中完善 tracing spans 在 `agent-core/src/`
+- [ ] T097 [P] 为每次 LLM 调用添加日志（模型、token 数、耗时）在 `agent-core/src/llm/`
+- [ ] T098 [P] 为每次工具调用添加日志（名称、参数、结果、耗时）在 `agent-core/src/tools/`
+- [ ] T099 添加 Hermes 兼容性 CI 步骤（`python scripts/test_hermes_compat.py`）在 `scripts/`
+- [ ] T100 全模块代码清理和文档完善
+- [ ] T101 性能优化：冷启动时间 < 50ms
+- [ ] T102 WASM 二进制体积优化：目标 < 5MB
+
+---
+
+## 依赖关系与执行顺序
+
+### 阶段依赖
+
+| 阶段 | 依赖 | 阻塞 |
+|------|------|------|
+| **P1：项目初始化** | — | 所有阶段 |
+| **P2：基础设施** | P1 | US1（Phase 3） |
+| **P3：US1 Agent 引擎** | P1+P2 | US2, US3, US4, US5 |
+| **P4：US2 工具系统** | P3 | — |
+| **P5：US3 记忆与技能** | P3 | — |
+| **P6：US4 学习闭环** | P3+P5 | — |
+| **P7：US5 MCP 与委托** | P3+P4 | — |
+| **P8：跨平台绑定** | P3+P5 | — |
+| **P9：收尾优化** | 所有 | — |
+
+### 各用户故事内部顺序
+
+- 核心类型 → Trait → 实现 → 工具 → 集成
+- 每个故事完成后应可独立测试
+
+### 可并行执行的任务
+
+- Phase 1: T002/T003/T004/T005 可并行
+- Phase 2: T007-T017（全部 [P]）可并行
+- Phase 3: T019/T020/T021（LLM 供应商）可并行
+- Phase 4: T043-T050（文件/终端/Web 工具）可并行
+- Phase 5: T052/T053（会话存储 + FTS5）可并行
+- Phase 3 完成后，Phase 4-7 可并行推进（如果团队够）
+
+---
+
+## 实施策略
+
+### MVP 先行（Phase 1-3）
+
+1. Phase 1：初始化 → 工作空间编译通过
+2. Phase 2：基础设施 → 核心 trait 就绪
+3. Phase 3：US1 → Agent 在 CLI 中跑起来
+4. **停下验证**：CLI demo 可工作，Hermes 兼容测试通过
+5. MVP 交付物：可用的 CLI Agent（ReAct 循环 + 文件/Web 工具 + 流式输出）
+
+### 增量交付
+
+1. Phase 1-3 → MVP CLI Agent（可用！）
+2. Phase 4 → Agent 拥有完整工具系统
+3. Phase 5 → Agent 拥有记忆和技能
+4. Phase 6 → 自学习 Agent
+5. Phase 7 → MCP 互联 Agent 生态
+6. Phase 8 → 跨平台 SDK
+
+### MVP 范围
+
+**Phase 1-3 共 36 个任务**（AI 辅助预计 4-6 周）：一个能正常工作的 CLI Agent
+- 与 OpenAI/Anthropic/Ollama 对话
+- 调用文件/终端/Web 工具
+- 流式输出
+- 优雅的错误处理
+- 通过 Hermes 兼容性测试
