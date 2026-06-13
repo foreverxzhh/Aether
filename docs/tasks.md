@@ -6,6 +6,22 @@
 
 ---
 
+## 开发进展
+
+| Phase | 状态 | 完成时间 | 备注 |
+|-------|------|---------|------|
+| Phase 1: 项目初始化 | ✅ 完成 | 2026-06-14 | workspace 编译通过 |
+| Phase 2: 基础设施 | ✅ 完成 | 2026-06-14 | 36 个文件，4244 行代码，7 个测试通过 |
+| Phase 3: Agent 引擎 | 🚧 待开始 | — | T019-T036 共 18 个任务 |
+| Phase 4: 工具系统 | ⏳ 等待 | — | 依赖 Phase 3 |
+| Phase 5: 记忆与技能 | ⏳ 等待 | — | 依赖 Phase 3 |
+| Phase 6: 学习闭环 | ⏳ 等待 | — | 依赖 Phase 3+5 |
+| Phase 7: MCP 与委托 | ⏳ 等待 | — | 依赖 Phase 3+4 |
+| Phase 8: 跨平台绑定 | ⏳ 等待 | — | 依赖 Phase 3+5 |
+| Phase 9: 收尾优化 | ⏳ 等待 | — | 依赖所有 |
+
+---
+
 ## 格式说明: `[ID] [P?] [Story] 任务描述`
 
 - **无标记**: 顺序执行（有依赖关系）
@@ -15,50 +31,60 @@
 
 ---
 
-## Phase 1：项目初始化
+## Phase 1：项目初始化 ✅ 已完成
 
 **目标**: 搭建 Rust 工作空间，可编译通过
 
-- [ ] T001 创建 Aether 根目录下的 Cargo 工作空间 `Aether/Cargo.toml`
-- [ ] T002 [P] 创建 `agent-core` crate 并配置 `Cargo.toml`（依赖：tokio, reqwest, serde, serde_json, rusqlite, tracing, async-trait, uuid, thiserror）
-- [ ] T003 [P] 创建 `agent-bindings` crate 并配置 `Cargo.toml`（依赖：uniffi, wasm-bindgen）
-- [ ] T004 [P] 配置 Rust 工具链 `rust-toolchain.toml`
-- [ ] T005 [P] 在 `agent-core/src/lib.rs` 中初始化 tracing subscriber
-- [ ] T006 添加 `.gitignore` 规则（Rust target、IDE、操作系统文件）
+- [x] T001 创建 Aether 根目录下的 Cargo 工作空间 `Aether/Cargo.toml`
+- [x] T002 [P] 创建 `agent-core` crate 并配置 `Cargo.toml`
+- [x] T003 [P] 创建 `agent-bindings` crate 并配置 `Cargo.toml`
+- [x] T004 [P] 配置 Rust 工具链 `rust-toolchain.toml`（1.94.0 + wasm32 target）
+- [x] T005 [P] 在 `agent-core/src/lib.rs` 中初始化 tracing subscriber
+- [x] T006 添加 `.gitignore` 规则
 
-**检查点**: `cargo build --workspace` 编译通过
+**检查点**: `cargo build --workspace` 编译通过 ✅
+**验证结果**: `cargo test` 7/7 通过，`cargo run --bin aether -- --help` 输出帮助信息
 
 ---
 
-## Phase 2：基础设施（阻塞所有后续任务）
+## Phase 2：基础设施 ✅ 已完成
 
 **目标**: 核心数据类型、错误系统、trait 定义——所有用户故事都依赖的基础
 
 ### 核心数据类型
 
-- [ ] T007 [P] 定义 Message 类型（System/User/Assistant/Tool）在 `agent-core/src/types/message.rs`
-- [ ] T008 [P] 定义 ToolCall/ToolResult 类型在 `agent-core/src/types/tool.rs`
-- [ ] T009 [P] 定义 ModelResponse（text, tool_calls, finish_reason）在 `agent-core/src/types/model.rs`
-- [ ] T010 [P] 定义 AgentConfig 结构（~60 字段，Builder 模式）在 `agent-core/src/config.rs`
+- [x] T007 [P] 定义 Message 类型（System/User/Assistant/Tool）在 `agent-core/src/types/message.rs`
+- [x] T008 [P] 定义 ToolCall/ToolResult 类型在 `agent-core/src/types/tool.rs`
+- [x] T009 [P] 定义 ModelResponse（text, tool_calls, finish_reason）在 `agent-core/src/types/model.rs`
+- [x] T010 [P] 定义 AgentConfig 结构（Builder 模式）在 `agent-core/src/config.rs`
 
 ### 错误系统
 
-- [ ] T011 [P] 定义统一的 Error 枚举（`AetherError`）+ 错误码在 `agent-core/src/error.rs`
-- [ ] T012 [P] 为 AetherError 实现 `Display` 和 `From` 转换
+- [x] T011 [P] 定义统一的 Error 枚举（`AetherError`，22 种错误码）在 `agent-core/src/error.rs`
+- [x] T012 [P] 为 AetherError 实现 `Display` 和 `From` 转换
 
 ### 核心 Trait
 
-- [ ] T013 [P] 定义 `ChatModel` trait（invoke, stream）在 `agent-core/src/llm/mod.rs`
-- [ ] T014 [P] 定义 `Tool` trait（name, description, parameters, call）在 `agent-core/src/tools/mod.rs`
-- [ ] T015 [P] 定义 `Memory` trait（add, get_context, clear）在 `agent-core/src/memory/mod.rs`
-- [ ] T016 [P] 定义 `SessionStore` trait（save, load, search, delete）在 `agent-core/src/memory/state.rs`
-- [ ] T017 [P] 定义 `SkillStore` trait（list, get, save, delete, search）在 `agent-core/src/skills/mod.rs`
+- [x] T013 [P] 定义 `ChatModel` trait（invoke, stream）在 `agent-core/src/llm/mod.rs`
+- [x] T014 [P] 定义 `Tool` trait（name, description, parameters, call）在 `agent-core/src/tools/mod.rs`
+- [x] T015 [P] 定义 `Memory` trait（add, get_context, clear）在 `agent-core/src/memory/mod.rs`
+- [x] T016 [P] 定义 `SessionStore` trait（save, load, search, delete）在 `agent-core/src/memory/state.rs`
+- [x] T017 [P] 定义 `SkillStore` trait（list, get, save, delete, search）在 `agent-core/src/skills/mod.rs`
 
 ### 可观测性
 
-- [ ] T018 初始化 Agent 生命周期 tracing spans（agent_run, llm_call, tool_call）在 `agent-core/src/tracing.rs`
+- [x] T018 初始化 Agent 生命周期 tracing spans（agent_run, llm_call, tool_call）在 `agent-core/src/tracing.rs`
 
-**检查点**: 所有核心 trait 编译通过，AetherError 可在所有模块中使用
+### 跨模块工具（Phases 1-2 提前实现的基础模块）
+
+- [x] T023 [P] [US1] 多层系统提示词组装器（PromptBuilder）在 `agent-core/src/prompt.rs`
+- [x] T024 [US1] AIAgent 结构（Builder 模式）在 `agent-core/src/agent.rs`
+- [x] T027 [P] [US1] 迭代预算控制（IterationBudget，线程安全 AtomicU32）在 `agent-core/src/budget.rs`
+- [x] T028 [P] [US1] 熔断器（CircuitBreaker，工具签名哈希 + 连续检测）在 `agent-core/src/breaker.rs`
+- [x] T034 [US1] 最小 CLI 入口在 `agent-bindings/src/bin/cli.rs`
+
+**检查点**: 所有核心 trait 编译通过，AetherError 可在所有模块中使用 ✅
+**验证结果**: `cargo test` → 7/7 通过（3 个 budget 测试 + 3 个 breaker 测试 + 1 个工具注册测试）
 
 ---
 
