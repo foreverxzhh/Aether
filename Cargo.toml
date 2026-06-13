@@ -1,0 +1,13 @@
+[workspace]
+resolver = "3"
+members = [
+    "agent-core",
+    "agent-bindings",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Aether Contributors"]
+license = "MIT"
+repository = "https://github.com/foreverxzhh/aether"
