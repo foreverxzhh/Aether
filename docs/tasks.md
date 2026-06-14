@@ -406,8 +406,8 @@
 
 | # | 任务 | 说明 | 预估 |
 |---|------|------|------|
-| 🔴 R05 | **Android SDK (Kotlin)** | 🔥 正在做。UniFFI 生成 Kotlin 绑定 → Android 库 → Demo App | 1-2 周 |
-| 🟡 R10 | **Windows SDK (C#)** | 🔥 正在做。UniFFI 生成 C# 绑定 → NuGet 包 | 1-2 周 |
+| 🔴 R05 | **Android SDK (Kotlin)** | ✅ 已完成。UniFFI 绑定 + Aether.kt 包装 + Gradle 项目 + build-android.sh | 1-2 周 |
+| 🟡 R10 | **Windows SDK (C#)** | ✅ 已完成。C API 导出 + C# P/Invoke 包装 + NuGet 项目 + build-windows.ps1 | 1-2 周 |
 | ⚪ R07 | **iOS SDK (Swift)** | ⏳ 后续做。依赖 Android 经验后再做 | 1-2 周 |
 | ⚪ R06 | **Web SDK (WASM)** | ⏳ 后续做。需要 WASM 编译环境搭建 | 1 周 |
 | R08 | **更多 Hermes 兼容性测试** | 目前只有 skills 格式验证。需增加：会话 SQLite schema 兼容、消息格式兼容、技能自动生成结果对比 | 3-5 天 |
@@ -417,7 +417,7 @@
 
 | # | 任务 | 说明 | 预估 |
 |---|------|------|------|
-| R10 | **Windows SDK (C#)** | UniFFI 生成 C# 绑定 → NuGet 包 | 1-2 周 |
+| R10 | **Windows SDK (C#)** | ✅ 已完成。C API + C# P/Invoke + NuGet | 1-2 周 |
 | R11 | **远程终端后端（Docker/SSH）** | terminal_tool 增加 Docker 容器内执行 和 SSH 远程执行模式 | 1 周 |
 | R12 | **浏览器工具（简化版）** | 基于 headless_chrome crate 实现 navigate/snapshot/click/type 四个核心操作 | 2-3 周 |
 | R13 | **代码执行沙箱（基础版）** | 本地隔离进程执行 Python/JS 代码，限制资源（内存、时间、网络） | 1 周 |
@@ -442,7 +442,7 @@
 | 优先级 | 数量 | 总工时 |
 |--------|------|--------|
 | 🔴 P0 | 4 项 | ✅ 已完成 |
-| 🟡 P1 | 已调整 | 🔥 Android + Windows SDK 进行中 |
+| 🟡 R05-R10 | Android + Windows SDK | ✅ 已完成 |
 | ⚪ 后续 | R06 Web SDK, R07 iOS SDK | ⏳ WASM 环境就绪后 |
 | 🟢 P2 | 7 项 | ~4-6 周 |
 | ⚪ P3 | 5 项 | ~2-3 周 |

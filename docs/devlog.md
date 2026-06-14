@@ -187,3 +187,17 @@ R04 MCP 工具注册框架: API入口就绪
 - R06 (Web SDK/WASM): 回退所有修改。WASM 编译需要独立 crate 和 LLVM 工具链，暂不处理
 - 优先级调整: 🔥 Android SDK + Windows SDK 先做，Web/iOS 后续
 - 代码状态: 已还原到 R08 完成状态，编译 0 error，29 测试通过
+
+## 2026-06-15 — R05 Android + R10 Windows SDK 完成
+
+### Android SDK (R05)
+- UniFFI Kotlin 绑定（1437行生成代码）
+- 高層 Aether.kt 包装（构造/initModel/chat）
+- Gradle Android Library 项目配置
+- build-android.sh 一键编译（NDK 自动检测）
+
+### Windows SDK (R10)
+- C API 导出（5个函数：create/init_model/chat/free_string/destroy）
+- C# P/Invoke 包装（AetherAgent 类，自动 JSON 解析）
+- NuGet 项目（net6.0;net8.0）
+- build-windows.ps1 一键打包
