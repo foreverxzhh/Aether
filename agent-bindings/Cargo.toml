@@ -20,9 +20,13 @@ serde-wasm-bindgen = { version = "0.6", optional = true }
 js-sys = { version = "0.3", optional = true }
 
 [features]
-default = []
+default = ["native"]
+native = ["agent-core/native"]
 uniffi = ["dep:uniffi"]
 wasm = ["wasm-bindgen", "serde-wasm-bindgen", "js-sys"]
+
+# Android 构建：排除非 Android 兼容的依赖
+android = ["agent-core/portable-pty"]
 
 [lib]
 crate-type = ["cdylib", "rlib"]

@@ -84,7 +84,7 @@ if [ "$NDK_AVAILABLE" = true ]; then
     for target in "${!TARGET_MAP[@]}"; do
         jni_dir="${TARGET_MAP[$target]}"
         echo "  → 构建 $target ..."
-        cargo build -p agent-bindings --features uniffi \
+        cargo build -p agent-bindings --no-default-features \
             --target "$target" --release 2>&1 | tail -2
 
         # 复制 .so 到 JNI 目录

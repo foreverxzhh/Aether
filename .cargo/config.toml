@@ -1,6 +1,6 @@
 # Android NDK 交叉编译配置
 # 需要先安装 NDK: https://developer.android.com/ndk/downloads
-# 安装后设置 ANDROID_NDK_HOME 环境变量
+# 运行时需设置 ANDROID_NDK_HOME 并将 NDK 工具链加入 PATH
 
 [target.aarch64-linux-android]
 linker = "aarch64-linux-android21-clang.cmd"
