@@ -26,7 +26,7 @@
 | You want... | Hermes (Python) | Aether (Rust) |
 |------------|----------------|---------------|
 | Run on Android phone | ❌ | ✅ Kotlin SDK |
-| Run on iPhone | ❌ | ✅ Swift SDK |
+| Run on iPhone | ❌ | 🚧 Swift SDK (code ready) |
 | Embed in Windows app | ❌ | ✅ C# SDK (verified) |
 | Run in browser | ❌ | ✅ WASM (587KB) |
 | Embed as Rust library | ❌ | ✅ `cargo add agent-core` |
@@ -49,7 +49,7 @@
 | **Streaming** | ✅ Complete | SSE real-time token output |
 | **Profile System** | ✅ Complete | Multi-instance isolation (independent config/memory/skills) |
 | **Sub-agent Delegation** | ✅ Complete | Isolated child agents with restricted toolkits |
-| **Platform SDKs** | ✅ Verified | Android ✅, Windows ✅, Web ✅, iOS ✅, macOS ✅, Python ✅, Linux ✅ |
+| **Platform SDKs** | ✅ Verified | Android ✅, Windows ✅, Web ✅, Python ✅, Linux ✅, iOS 🚧, macOS 🚧 |
 
 ---
 
@@ -128,7 +128,7 @@ var reply = agent.Chat("你好");
 | Core Engine (102 tasks) | ✅ 100% | ReAct, LLM, tools, memory, skills, MCP, compression, learning loop |
 | Android SDK | ✅ Verified | Real ARM64 device: Rust→DeepSeek→conversation, 5MB .so |
 | Windows SDK | ✅ Verified | C# P/Invoke: agent_bindings.dll → DeepSeek, full conversation OK |
-| iOS SDK | 🚧 Next | Swift bindings generated, need XCFramework packaging |
+| iOS / macOS SDK | 🚧 Code ready | Swift 绑定+Pkg.swift+Wrapper, 需 macOS+Xcode 验证 |
 | Web SDK | ✅ Verified | agent-wasm crate, web_sys::fetch, 587KB .wasm, HTML demo |
 | CI/CD | ✅ Ready | GitHub Actions: test-linux/windows/macos + cross-android + cross-wasm |
 | Tests | ✅ 52 passing | 18 unit + 11 Hermes compat + 19 integration + 4 doc |

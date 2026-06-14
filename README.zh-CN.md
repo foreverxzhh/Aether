@@ -34,13 +34,13 @@
 | **学习闭环** | ✅ 完成 | Background Review 自动生成技能，Curator 管理生命周期 |
 | **L1-L4 记忆** | ✅ 完成 | MEMORY.md、USER.md、技能库、SQLite + FTS5 全文搜索 |
 | **技能系统** | ✅ 完成 | agentskills.io 兼容，自动生成，版本管理，增量更新 |
-| **工具系统** | ✅ 完成 | 11 个内置工具：文件、终端、Web 搜索、Web 抓取、记忆、技能 |
+| **工具系统** | ✅ 完成 | 17 个内置工具：文件、终端、Web、记忆、技能、Cron、Docker、SSH、沙箱、图像 |
 | **MCP 协议** | ✅ 完成 | 客户端（stdio + HTTP）+ 服务端，工具发现，OAuth |
 | **上下文压缩** | ✅ 完成 | LLM 自动摘要 + 会话拆分，长对话不崩 |
 | **流式输出** | ✅ 完成 | SSE 逐字实时输出 |
 | **Profile 系统** | ✅ 完成 | 多实例隔离（独立配置/记忆/技能） |
 | **子 Agent 委托** | ✅ 完成 | 隔离子任务执行，限制工具集 |
-| **平台 SDK** | 🚧 构建中 | Android (Kotlin) ✅、Windows (C#) ✅、iOS (Swift) 🚧、Web (WASM) 🚧 |
+| **平台 SDK** | ✅ 已验证 | Android ✅, Windows ✅, Web ✅, Python ✅, Linux ✅, iOS 🚧, macOS 🚧 |
 
 ---
 
@@ -123,7 +123,7 @@ var reply = agent.Chat("你好");
 | Web SDK | ✅ 真机验证 | agent-wasm crate, web_sys::fetch, 587KB .wasm, HTML Demo |
 | CI/CD | ✅ 就绪 | GitHub Actions: test-linux/windows/macos + cross-android/wasm |
 | 测试 | ✅ 52 通过 | 18 单元 + 11 Hermes 兼容 + 19 集成 + 4 文档 |
-| crates.io | ✅ 元数据就绪 | description/keywords/categories 已配置 |
+| crates.io | 🚧 未发布 | 元数据就绪，待推送 GitHub 后发布 |
 
 ---
 
