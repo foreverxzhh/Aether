@@ -410,7 +410,7 @@
 | R06 | **Web SDK (WASM)** | wasm-pack 构建 → TypeScript 封装 → 浏览器 Demo | 1 周 |
 | R07 | **iOS SDK (Swift)** | UniFFI 生成 Swift 绑定 → XCFramework → Demo App | 1-2 周 |
 | R08 | **更多 Hermes 兼容性测试** | 目前只有 skills 格式验证。需增加：会话 SQLite schema 兼容、消息格式兼容、技能自动生成结果对比 | 3-5 天 |
-| R09 | **基础文档 / API 参考** | rustdoc 级别的 API 文档覆盖，README 完善使用示例（各平台） | 2-3 天 |
+| R09 | **基础文档 / API 参考** | ✅ 已完成。README中英双语、getting-started指南、rustdoc API文档 | 2-3 天 |
 
 ### 🟢 P2 — 增强（锦上添花）
 
