@@ -3,6 +3,7 @@ use tokio::sync::RwLock;
 
 use crate::config::AgentConfig;
 use crate::error::AetherError;
+#[allow(unused_imports)]
 use crate::llm::{ChatModel, Streamable};
 use crate::llm::provider::create_chat_model;
 use crate::loop_mod;

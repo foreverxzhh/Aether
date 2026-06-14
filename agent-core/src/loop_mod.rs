@@ -1,3 +1,4 @@
+use std::time::Duration;
 use tracing::{info, warn};
 use crate::agent::AIAgent;
 use crate::breaker::CircuitBreaker;
@@ -6,6 +7,15 @@ use crate::error::AetherError;
 use crate::prompt::PromptBuilder;
 use crate::types::message::Message;
 use crate::types::model::TurnResult;
+
+/// 判断错误是否可重试
+fn is_retryable(err: &AetherError) -> bool {
+    matches!(err,
+        AetherError::LlmError(_)
+        | AetherError::LlmEmptyResponse
+        | AetherError::LlmParseError(_)
+    )
+}
 
 /// 运行一轮对话（ReAct 循环）
 pub async fn run_conversation(
@@ -52,8 +62,23 @@ pub async fn run_conversation(
             break;
         }
 
-        // 调用 LLM
-        let response = model.invoke(&messages, &tools).await?;
+        // 调用 LLM（带重试）
+        let response = {
+            let mut last_err = None;
+            let mut response = None;
+            for attempt in 0..3 {
+                match model.invoke(&messages, &tools).await {
+                    Ok(r) => { response = Some(r); break; }
+                    Err(e) if is_retryable(&e) => {
+                        warn!(attempt = attempt + 1, error = %e, "LLM 调用失败，重试中");
+                        last_err = Some(e);
+                        tokio::time::sleep(Duration::from_millis(500 * 2u64.pow(attempt))).await;
+                    }
+                    Err(e) => { return Err(e); }
+                }
+            }
+            response.ok_or_else(|| last_err.unwrap_or(AetherError::LlmError("LLM 调用重试耗尽".to_string())))?
+        };
 
         // 处理工具调用
         if let Some(calls) = &response.tool_calls {
