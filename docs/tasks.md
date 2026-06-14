@@ -143,33 +143,33 @@
 
 ### 工具注册表
 
-- [ ] T037 [US2] 实现 ToolRegistry（编译期注册，用 `inventory` crate）在 `agent-core/src/tools/registry.rs`
-- [ ] T038 [US2] 实现工具集系统（分组 + check_fn 门控 + 30 秒 TTL 缓存）在 `agent-core/src/tools/toolsets.rs`
-- [ ] T039 [US2] 实现工具参数的 JSON Schema 自动生成在 `agent-core/src/tools/registry.rs`
-- [ ] T040 [US2] 实现运行时动态 schema 覆盖（dynamic_schema_overrides）在 `agent-core/src/tools/registry.rs`
-- [ ] T041 [US2] 实现运行时工具动态注册/注销在 `agent-core/src/tools/registry.rs`
-- [ ] T042 [US2] 实现熔断器集成（工具签名追踪）在 `agent-core/src/tools/registry.rs`
+- [x] T037 [US2] 实现 ToolRegistry（编译期注册，用 `inventory` crate）在 `agent-core/src/tools/registry.rs`
+- [x] T038 [US2] 实现工具集系统（分组 + check_fn 门控 + 30 秒 TTL 缓存）在 `agent-core/src/tools/toolsets.rs`
+- [x] T039 [US2] 实现工具参数的 JSON Schema 自动生成在 `agent-core/src/tools/registry.rs`
+- [x] T040 [US2] 实现运行时动态 schema 覆盖（dynamic_schema_overrides）在 `agent-core/src/tools/registry.rs`
+- [x] T041 [US2] 实现运行时工具动态注册/注销在 `agent-core/src/tools/registry.rs`
+- [x] T042 [US2] 实现熔断器集成（工具签名追踪）在 `agent-core/src/tools/registry.rs`
 
 ### 文件工具
 
-- [ ] T043 [P] [US2] 实现 `read_file` 工具在 `agent-core/src/tools/file.rs`
-- [ ] T044 [P] [US2] 实现 `write_file` 工具在 `agent-core/src/tools/file.rs`
-- [ ] T045 [P] [US2] 实现 `patch` 工具（基于 diff 的编辑）在 `agent-core/src/tools/file.rs`
-- [ ] T046 [P] [US2] 实现 `search_files` 工具（glob + regex）在 `agent-core/src/tools/file.rs`
+- [x] T043 [P] [US2] 实现 `read_file` 工具在 `agent-core/src/tools/file.rs`
+- [x] T044 [P] [US2] 实现 `write_file` 工具在 `agent-core/src/tools/file.rs`
+- [x] T045 [P] [US2] 实现 `patch` 工具（基于 diff 的编辑）在 `agent-core/src/tools/file.rs`
+- [x] T046 [P] [US2] 实现 `search_files` 工具（glob + regex）在 `agent-core/src/tools/file.rs`
 
 ### 终端工具
 
-- [ ] T047 [US2] 实现 `terminal` 工具（子进程执行，`portable-pty`）在 `agent-core/src/tools/terminal.rs`
-- [ ] T048 [US2] 添加终端安全检查（危险命令过滤）在 `agent-core/src/tools/terminal.rs`
+- [x] T047 [US2] 实现 `terminal` 工具（子进程执行，`portable-pty`）在 `agent-core/src/tools/terminal.rs`
+- [x] T048 [US2] 添加终端安全检查（危险命令过滤）在 `agent-core/src/tools/terminal.rs`
 
 ### Web 工具
 
-- [ ] T049 [P] [US2] 实现 `web_search` 工具在 `agent-core/src/tools/web.rs`
-- [ ] T050 [P] [US2] 实现 `web_extract` 工具（HTML 页面抓取）在 `agent-core/src/tools/web.rs`
+- [x] T049 [P] [US2] 实现 `web_search` 工具在 `agent-core/src/tools/web.rs`
+- [x] T050 [P] [US2] 实现 `web_extract` 工具（HTML 页面抓取）在 `agent-core/src/tools/web.rs`
 
 ### Hermes 兼容性测试
 
-- [ ] T051 [US2] 兼容性测试：Hermes 跑工具，Aether 读取同一工具 schema，对比结构在 `agent-core/tests/hermes_compat/tools.rs`
+- [x] T051 [US2] 兼容性测试：Hermes 跑工具，Aether 读取同一工具 schema，对比结构在 `agent-core/tests/hermes_compat/tools.rs`
 
 **检查点**: Agent 可以读文件、搜索代码、执行终端命令、搜索网页
 
@@ -183,36 +183,36 @@
 
 ### 会话存储
 
-- [ ] T052 [P] [US3] 实现 SQLite 会话存储在 `agent-core/src/memory/state.rs`（schema 匹配 Hermes `hermes_state.py`）
-- [ ] T053 [P] [US3] 实现跨会话消息的 FTS5 全文搜索在 `agent-core/src/memory/state.rs`
-- [ ] T054 [US3] 实现会话链（parent_session_id，压缩拆分）在 `agent-core/src/memory/state.rs`
+- [x] T052 [P] [US3] 实现 SQLite 会话存储在 `agent-core/src/memory/state.rs`（schema 匹配 Hermes `hermes_state.py`）
+- [x] T053 [P] [US3] 实现跨会话消息的 FTS5 全文搜索在 `agent-core/src/memory/state.rs`
+- [x] T054 [US3] 实现会话链（parent_session_id，压缩拆分）在 `agent-core/src/memory/state.rs`
 
 ### 记忆管理器（L1-L4）
 
-- [ ] T055 [US3] 实现 MemoryManager（编排 L1-L4）在 `agent-core/src/memory/mod.rs`
-- [ ] T056 [P] [US3] 实现 L1 核心记忆（MEMORY.md 文件读写/自动注入）在 `agent-core/src/memory/core.rs`
-- [ ] T057 [P] [US3] 实现 L2 用户画像（USER.md 文件读写）在 `agent-core/src/memory/profile.rs`
-- [ ] T058 [P] [US3] 实现 L3 技能索引（skills/*.md 的 FTS5 搜索）在 `agent-core/src/memory/skills_index.rs`
-- [ ] T059 [US3] 实现 L4 长期存储（会话归档）在 `agent-core/src/memory/state.rs`
+- [x] T055 [US3] 实现 MemoryManager（编排 L1-L4）在 `agent-core/src/memory/mod.rs`
+- [x] T056 [P] [US3] 实现 L1 核心记忆（MEMORY.md 文件读写/自动注入）在 `agent-core/src/memory/core.rs`
+- [x] T057 [P] [US3] 实现 L2 用户画像（USER.md 文件读写）在 `agent-core/src/memory/profile.rs`
+- [x] T058 [P] [US3] 实现 L3 技能索引（skills/*.md 的 FTS5 搜索）在 `agent-core/src/memory/skills_index.rs`
+- [x] T059 [US3] 实现 L4 长期存储（会话归档）在 `agent-core/src/memory/state.rs`
 
 ### 技能系统
 
-- [ ] T060 [US3] 实现 agentskills.io 格式的 frontmatter + Markdown 解析器在 `agent-core/src/skills/mod.rs`
-- [ ] T061 [US3] 实现技能 CRUD（列表、查看、创建、更新、删除）在 `agent-core/src/skills/mod.rs`
-- [ ] T062 [US3] 实现技能搜索（名称 + FTS5）在 `agent-core/src/skills/mod.rs`
+- [x] T060 [US3] 实现 agentskills.io 格式的 frontmatter + Markdown 解析器在 `agent-core/src/skills/mod.rs`
+- [x] T061 [US3] 实现技能 CRUD（列表、查看、创建、更新、删除）在 `agent-core/src/skills/mod.rs`
+- [x] T062 [US3] 实现技能搜索（名称 + FTS5）在 `agent-core/src/skills/mod.rs`
 
 ### 记忆/技能工具
 
-- [ ] T063 [US3] 实现 `memory` 工具（读写记忆）在 `agent-core/src/tools/memory_tool.rs`
-- [ ] T064 [US3] 实现 `skills_list`/`skill_view`/`skill_manage` 工具在 `agent-core/src/tools/skills.rs`
+- [x] T063 [US3] 实现 `memory` 工具（读写记忆）在 `agent-core/src/tools/memory_tool.rs`
+- [x] T064 [US3] 实现 `skills_list`/`skill_view`/`skill_manage` 工具在 `agent-core/src/tools/skills.rs`
 
 ### Profile 系统
 
-- [ ] T065 [US3] 实现 Profile 系统（每个 profile 有独立的 HERMES_HOME 路径）在 `agent-core/src/profile.rs`
+- [x] T065 [US3] 实现 Profile 系统（每个 profile 有独立的 HERMES_HOME 路径）在 `agent-core/src/profile.rs`
 
 ### Hermes 兼容性测试
 
-- [ ] T066 [US3] 兼容性测试：Hermes 写 MEMORY.md/USER.md，Aether 正确读取解析在 `agent-core/tests/hermes_compat/memory.rs`
+- [x] T066 [US3] 兼容性测试：Hermes 写 MEMORY.md/USER.md，Aether 正确读取解析在 `agent-core/tests/hermes_compat/memory.rs`
 
 **检查点**: Agent 跨会话记住用户偏好，能列表/查看技能
 
@@ -226,31 +226,31 @@
 
 ### 上下文压缩
 
-- [ ] T067 [US4] 实现 token 估算（tiktoken 等价）在 `agent-core/src/compression/mod.rs`
-- [ ] T068 [US4] 实现压缩逻辑：确定范围 → LLM 摘要（保护头部+尾部）在 `agent-core/src/compression/mod.rs`
-- [ ] T069 [US4] 实现会话拆分：新建子会话 + parent_session_id 链在 `agent-core/src/compression/mod.rs`
-- [ ] T070 [US4] 实现压缩后迭代预算退还机制在 `agent-core/src/compression/mod.rs`
+- [x] T067 [US4] 实现 token 估算（tiktoken 等价）在 `agent-core/src/compression/mod.rs`
+- [x] T068 [US4] 实现压缩逻辑：确定范围 → LLM 摘要（保护头部+尾部）在 `agent-core/src/compression/mod.rs`
+- [x] T069 [US4] 实现会话拆分：新建子会话 + parent_session_id 链在 `agent-core/src/compression/mod.rs`
+- [x] T070 [US4] 实现压缩后迭代预算退还机制在 `agent-core/src/compression/mod.rs`
 
 ### Prompt 缓存
 
-- [ ] T071 [US4] 实现 Anthropic cache_control 标记逻辑在 `agent-core/src/llm/caching.rs`
-- [ ] T072 [US4] 实现缓存约束（会话期间系统提示词不可变、工具集不可变）在 `agent-core/src/llm/caching.rs`
+- [x] T071 [US4] 实现 Anthropic cache_control 标记逻辑在 `agent-core/src/llm/caching.rs`
+- [x] T072 [US4] 实现缓存约束（会话期间系统提示词不可变、工具集不可变）在 `agent-core/src/llm/caching.rs`
 
 ### Background Review
 
-- [ ] T073 [US4] 实现 Background Review 触发逻辑（每轮对话后，检查条件）在 `agent-core/src/memory/review.rs`
-- [ ] T074 [US4] 实现 fork 审查 Agent（继承父 Agent 配置，限制工具集为记忆+技能）在 `agent-core/src/memory/review.rs`
-- [ ] T075 [US4] 实现审查提示词（记忆审查 + 技能审查，从 Hermes 移植）在 `agent-core/src/memory/review.rs`
+- [x] T073 [US4] 实现 Background Review 触发逻辑（每轮对话后，检查条件）在 `agent-core/src/memory/review.rs`
+- [x] T074 [US4] 实现 fork 审查 Agent（继承父 Agent 配置，限制工具集为记忆+技能）在 `agent-core/src/memory/review.rs`
+- [x] T075 [US4] 实现审查提示词（记忆审查 + 技能审查，从 Hermes 移植）在 `agent-core/src/memory/review.rs`
 
 ### 技能策展人
 
-- [ ] T076 [US4] 实现 Curator 调度器（空闲检测，间隔配置，状态持久化）在 `agent-core/src/memory/curator.rs`
-- [ ] T077 [US4] 实现技能生命周期流转（活跃 → 陈旧 → 归档）在 `agent-core/src/memory/curator.rs`
-- [ ] T078 [US4] 实现归档/恢复机制在 `agent-core/src/memory/curator.rs`
+- [x] T076 [US4] 实现 Curator 调度器（空闲检测，间隔配置，状态持久化）在 `agent-core/src/memory/curator.rs`
+- [x] T077 [US4] 实现技能生命周期流转（活跃 → 陈旧 → 归档）在 `agent-core/src/memory/curator.rs`
+- [x] T078 [US4] 实现归档/恢复机制在 `agent-core/src/memory/curator.rs`
 
 ### Hermes 兼容性测试
 
-- [ ] T079 [US4] 兼容性测试：Hermes 压缩后的会话 → Aether 正确读取 parent_session_id 链在 `agent-core/tests/hermes_compat/compression.rs`
+- [x] T079 [US4] 兼容性测试：Hermes 压缩后的会话 → Aether 正确读取 parent_session_id 链在 `agent-core/tests/hermes_compat/compression.rs`
 
 **检查点**: Agent 自动从对话中创建技能，长对话自动压缩
 
@@ -264,23 +264,23 @@
 
 ### MCP 客户端
 
-- [ ] T080 [P] [US5] 实现 MCP Client（stdio）— 子进程 stdin/stdout 的 JSON-RPC 在 `agent-core/src/mcp/client_stdio.rs`
-- [ ] T081 [P] [US5] 实现 MCP Client（HTTP/SSE）— 基于 HTTP 的 JSON-RPC 在 `agent-core/src/mcp/client_http.rs`
-- [ ] T082 [US5] 实现 MCP 工具发现（服务器 → 工具 schema 映射）在 `agent-core/src/mcp/mod.rs`
-- [ ] T083 [US5] 实现工具列表变更的动态通知在 `agent-core/src/mcp/mod.rs`
+- [x] T080 [P] [US5] 实现 MCP Client（stdio）— 子进程 stdin/stdout 的 JSON-RPC 在 `agent-core/src/mcp/client_stdio.rs`
+- [x] T081 [P] [US5] 实现 MCP Client（HTTP/SSE）— 基于 HTTP 的 JSON-RPC 在 `agent-core/src/mcp/client_http.rs`
+- [x] T082 [US5] 实现 MCP 工具发现（服务器 → 工具 schema 映射）在 `agent-core/src/mcp/mod.rs`
+- [x] T083 [US5] 实现工具列表变更的动态通知在 `agent-core/src/mcp/mod.rs`
 
 ### MCP OAuth
 
-- [ ] T084 [US5] 实现 MCP OAuth 流程（授权、令牌刷新）在 `agent-core/src/mcp/oauth.rs`
+- [x] T084 [US5] 实现 MCP OAuth 流程（授权、令牌刷新）在 `agent-core/src/mcp/oauth.rs`
 
 ### MCP 服务器
 
-- [ ] T085 [US5] 实现 MCP Server（将 Aether 工具暴露为 MCP 服务）在 `agent-core/src/mcp/server.rs`
+- [x] T085 [US5] 实现 MCP Server（将 Aether 工具暴露为 MCP 服务）在 `agent-core/src/mcp/server.rs`
 
 ### 子 Agent 委托
 
-- [ ] T086 [US5] 实现子 Agent 委托（隔离上下文，受限工具集）在 `agent-core/src/delegate.rs`
-- [ ] T087 [US5] 实现批量委托（并行子 Agent，结果聚合）在 `agent-core/src/delegate.rs`
+- [x] T086 [US5] 实现子 Agent 委托（隔离上下文，受限工具集）在 `agent-core/src/delegate.rs`
+- [x] T087 [US5] 实现批量委托（并行子 Agent，结果聚合）在 `agent-core/src/delegate.rs`
 
 **检查点**: Agent 可以使用外部 MCP 服务器提供的工具，可以委托子 Agent 执行任务
 
@@ -294,20 +294,20 @@
 
 ### UniFFI 绑定
 
-- [ ] T088 [P] [BD] 定义 UniFFI UDL 文件 `agent.udl`（包含所有导出类型和函数）在 `agent-bindings/agent.udl`
-- [ ] T089 [BD] 实现 `#[uniffi::export]` 包装（Agent create/invoke/stream/save/load）在 `agent-bindings/src/uniffi.rs`
-- [ ] T090 [BD] 生成 Kotlin 绑定（`uniffi-bindgen kotlin`）并测试在 `agent-bindings/`
-- [ ] T091 [BD] 生成 Swift 绑定（`uniffi-bindgen swift`）并测试在 `agent-bindings/`
+- [x] T088 [P] [BD] 定义 UniFFI UDL 文件 `agent.udl`（包含所有导出类型和函数）在 `agent-bindings/agent.udl`
+- [x] T089 [BD] 实现 `#[uniffi::export]` 包装（Agent create/invoke/stream/save/load）在 `agent-bindings/src/uniffi.rs`
+- [x] T090 [BD] 生成 Kotlin 绑定（`uniffi-bindgen kotlin`）并测试在 `agent-bindings/`
+- [x] T091 [BD] 生成 Swift 绑定（`uniffi-bindgen swift`）并测试在 `agent-bindings/`
 
 ### WASM 绑定
 
-- [ ] T092 [BD] 实现 WASM 入口（wasm-bindgen 导出）在 `agent-bindings/src/wasm.rs`
-- [ ] T093 [BD] 构建 WASM 目标（`wasm-pack build --target web`）在 `agent-bindings/`
+- [x] T092 [BD] 实现 WASM 入口（wasm-bindgen 导出）在 `agent-bindings/src/wasm.rs`
+- [x] T093 [BD] 构建 WASM 目标（`wasm-pack build --target web`）在 `agent-bindings/`
 
 ### CLI 多平台构建
 
-- [ ] T094 [BD] 打磨 CLI 二进制（Linux/macOS/Windows）在 `agent-bindings/src/bin/cli.rs`
-- [ ] T095 [BD] 搭建跨平台 CI 构建管线在 `scripts/build-all.sh`
+- [x] T094 [BD] 打磨 CLI 二进制（Linux/macOS/Windows）在 `agent-bindings/src/bin/cli.rs`
+- [x] T095 [BD] 搭建跨平台 CI 构建管线在 `scripts/build-all.sh`
 
 **检查点**: WASM 演示页面在浏览器中加载 Aether Agent，Kotlin/Swift 绑定编译通过
 
@@ -317,13 +317,13 @@
 
 **目标**: 跨模块的改进、性能优化、文档
 
-- [ ] T096 [P] 在所有模块中完善 tracing spans 在 `agent-core/src/`
-- [ ] T097 [P] 为每次 LLM 调用添加日志（模型、token 数、耗时）在 `agent-core/src/llm/`
-- [ ] T098 [P] 为每次工具调用添加日志（名称、参数、结果、耗时）在 `agent-core/src/tools/`
-- [ ] T099 添加 Hermes 兼容性 CI 步骤（`python scripts/test_hermes_compat.py`）在 `scripts/`
-- [ ] T100 全模块代码清理和文档完善
-- [ ] T101 性能优化：冷启动时间 < 50ms
-- [ ] T102 WASM 二进制体积优化：目标 < 5MB
+- [x] T096 [P] 在所有模块中完善 tracing spans 在 `agent-core/src/`
+- [x] T097 [P] 为每次 LLM 调用添加日志（模型、token 数、耗时）在 `agent-core/src/llm/`
+- [x] T098 [P] 为每次工具调用添加日志（名称、参数、结果、耗时）在 `agent-core/src/tools/`
+- [x] T099 添加 Hermes 兼容性 CI 步骤（`python scripts/test_hermes_compat.py`）在 `scripts/`
+- [x] T100 全模块代码清理和文档完善
+- [x] T101 性能优化：冷启动时间 < 50ms
+- [x] T102 WASM 二进制体积优化：目标 < 5MB
 
 ---
 
