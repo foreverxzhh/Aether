@@ -21,6 +21,7 @@ pub struct AgentConfig {
     /// 模型名称 (如 `gpt-4o`, `claude-sonnet-4-6`, `deepseek-v4-flash`)
     pub model: String,
     /// API Key（也可通过环境变量 `{PROVIDER}_API_KEY` 设置）
+    #[serde(skip_serializing)]
     pub api_key: Option<String>,
     /// 自定义 API 地址（OpenAI 兼容协议时使用）
     pub base_url: Option<String>,
