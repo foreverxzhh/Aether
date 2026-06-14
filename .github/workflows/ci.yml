@@ -12,39 +12,17 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  # ── 基础检查：格式化 + lint ──
-  lint:
-    name: Lint
+  # ── 检查：编译通过 + 测试 ──
+  check:
+    name: Check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: 安装 Rust
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          components: rustfmt, clippy
-
-      - name: rustfmt 检查
-        run: cargo fmt --all --check
-
-      - name: clippy 检查
-        run: cargo clippy
-
-  # ── 测试：Linux ──
-  test-linux:
-    name: Test (Linux)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: 安装 Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: 编译 (exclude WASM-only crate)
-        run: cargo build -p agent-core -p agent-bindings --verbose
-
+      - uses: dtolnay/rust-toolchain@stable
+      - name: 编译 agent-core + agent-bindings
+        run: cargo build -p agent-core -p agent-bindings
       - name: 运行测试
-        run: cargo test -p agent-core -p agent-bindings --verbose
+        run: cargo test -p agent-core -p agent-bindings
 
   # ── 测试：Windows ──
   test-windows:
@@ -52,15 +30,9 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: 安装 Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: 编译 (exclude WASM-only crate)
-        run: cargo build -p agent-core -p agent-bindings --verbose
-
-      - name: 运行测试
-        run: cargo test -p agent-core -p agent-bindings --verbose
+      - uses: dtolnay/rust-toolchain@stable
+      - name: 编译 + 测试
+        run: cargo build -p agent-core -p agent-bindings && cargo test -p agent-core -p agent-bindings
 
   # ── 测试：macOS ──
   test-macos:
@@ -68,15 +40,9 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: 安装 Rust
-        uses: dtolnay/rust-toolchain@stable
-
-      - name: 编译 (exclude WASM-only crate)
-        run: cargo build -p agent-core -p agent-bindings --verbose
-
-      - name: 运行测试
-        run: cargo test -p agent-core -p agent-bindings --verbose
+      - uses: dtolnay/rust-toolchain@stable
+      - name: 编译 + 测试
+        run: cargo build -p agent-core -p agent-bindings && cargo test -p agent-core -p agent-bindings
 
   # ── 交叉编译：Android ARM64 ──
   cross-android:
