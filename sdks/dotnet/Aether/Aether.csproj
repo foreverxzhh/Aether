@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFrameworks>net6.0;net8.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <PackageId>Aether.Sdk</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>Aether Contributors</Authors>
+    <Description>Cross-platform AI Agent SDK for .NET</Description>
+    <PackageTags>ai;agent;sdk;aether</PackageTags>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- 运行时原生库（随 NuGet 分发） -->
+    <None Include="..\runtimes\**" Pack="true" PackagePath="runtimes" />
+  </ItemGroup>
+</Project>
