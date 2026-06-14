@@ -1,16 +1,12 @@
-use chrono::Local;
 use crate::types::message::Message;
+use chrono::Local;
 
 /// 系统提示词组装器（三层结构）
 pub struct PromptBuilder;
 
 impl PromptBuilder {
     /// 构建完整的系统提示词
-    pub fn build(
-        identity: Option<&str>,
-        context: Option<&str>,
-        dynamic: Option<&str>,
-    ) -> String {
+    pub fn build(identity: Option<&str>, context: Option<&str>, dynamic: Option<&str>) -> String {
         let mut parts = Vec::new();
 
         // 稳定层：身份定义
@@ -49,7 +45,8 @@ impl PromptBuilder {
         format!(
             "你是 Aether，一个智能的 AI 助手。\n\
             你可以使用各种工具来帮助用户完成任务。\n\
-            当前时间：{}", now
+            当前时间：{}",
+            now
         )
     }
 }

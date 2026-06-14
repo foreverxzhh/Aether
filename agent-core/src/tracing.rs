@@ -1,27 +1,22 @@
-use tracing_subscriber::{fmt, EnvFilter, Registry};
 use tracing_subscriber::filter::LevelFilter;
 use tracing_subscriber::prelude::*;
+use tracing_subscriber::{fmt, EnvFilter, Registry};
 
 /// 初始化 tracing 日志系统
 pub fn init_tracing(level: &str) {
     let filter = EnvFilter::builder()
-        .with_default_directive(
-            level.parse().unwrap_or(LevelFilter::INFO.into())
-        )
+        .with_default_directive(level.parse().unwrap_or(LevelFilter::INFO.into()))
         .from_env_lossy();
 
-    let _subscriber = Registry::default()
-        .with(filter)
-        .with(fmt::Layer::default()
+    let _subscriber = Registry::default().with(filter).with(
+        fmt::Layer::default()
             .with_target(true)
             .with_thread_ids(true)
             .with_file(true)
-            .with_line_number(true));
+            .with_line_number(true),
+    );
 
-    if tracing_subscriber::registry()
-        .try_init()
-        .is_err()
-    {
+    if tracing_subscriber::registry().try_init().is_err() {
         // 已经初始化过，忽略
     }
 }

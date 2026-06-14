@@ -1,6 +1,6 @@
-use clap::Parser;
 use agent_core::config::AgentConfigBuilder;
 use agent_core::tracing::init_tracing;
+use clap::Parser;
 
 /// Aether — 跨平台 Agent SDK
 #[derive(Parser, Debug)]
@@ -80,11 +80,14 @@ async fn main() {
 
     // 运行对话（流式或非流式）
     if cli.stream {
-        match agent.chat_stream(&cli.prompt, |chunk| {
-            print!("{}", chunk.delta);
-            use std::io::Write;
-            std::io::stdout().flush().ok();
-        }).await {
+        match agent
+            .chat_stream(&cli.prompt, |chunk| {
+                print!("{}", chunk.delta);
+                use std::io::Write;
+                std::io::stdout().flush().ok();
+            })
+            .await
+        {
             Ok(full) => {
                 println!("\n");
                 let words = full.split_whitespace().count();

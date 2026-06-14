@@ -1,9 +1,9 @@
+use super::Tool;
+use crate::error::AetherError;
+use crate::memory::core::default_hermes_home;
+use crate::skills::FileSkillStore;
 use async_trait::async_trait;
 use serde_json::{json, Value};
-use crate::error::AetherError;
-use crate::skills::FileSkillStore;
-use crate::memory::core::default_hermes_home;
-use super::Tool;
 
 fn skills_dir() -> std::path::PathBuf {
     default_hermes_home().join("skills")
@@ -14,11 +14,17 @@ pub struct SkillsList;
 
 #[async_trait]
 impl Tool for SkillsList {
-    fn name(&self) -> &str { "skills_list" }
-    fn description(&self) -> &str { "列出所有可用的技能" }
-    fn parameters(&self) -> Value { json!({"type": "object", "properties": {
-        "category": {"type": "string", "description": "按分类筛选"}
-    }}) }
+    fn name(&self) -> &str {
+        "skills_list"
+    }
+    fn description(&self) -> &str {
+        "列出所有可用的技能"
+    }
+    fn parameters(&self) -> Value {
+        json!({"type": "object", "properties": {
+            "category": {"type": "string", "description": "按分类筛选"}
+        }})
+    }
     async fn call(&self, _args: Value) -> Result<String, AetherError> {
         let dir = skills_dir();
         if !dir.exists() {
@@ -51,8 +57,12 @@ pub struct SkillView;
 
 #[async_trait]
 impl Tool for SkillView {
-    fn name(&self) -> &str { "skill_view" }
-    fn description(&self) -> &str { "查看技能详细内容" }
+    fn name(&self) -> &str {
+        "skill_view"
+    }
+    fn description(&self) -> &str {
+        "查看技能详细内容"
+    }
     fn parameters(&self) -> Value {
         json!({
             "type": "object",
@@ -63,9 +73,10 @@ impl Tool for SkillView {
         })
     }
     async fn call(&self, args: Value) -> Result<String, AetherError> {
-        let name = args.get("name").and_then(|v| v.as_str()).ok_or(
-            AetherError::ToolInvalidArgs("缺少 name 参数".into())
-        )?;
+        let name = args
+            .get("name")
+            .and_then(|v| v.as_str())
+            .ok_or(AetherError::ToolInvalidArgs("缺少 name 参数".into()))?;
 
         let path = skills_dir().join(format!("{}.md", name));
         if !path.exists() {
@@ -86,8 +97,12 @@ pub struct SkillManage;
 
 #[async_trait]
 impl Tool for SkillManage {
-    fn name(&self) -> &str { "skill_manage" }
-    fn description(&self) -> &str { "创建、更新或删除技能" }
+    fn name(&self) -> &str {
+        "skill_manage"
+    }
+    fn description(&self) -> &str {
+        "创建、更新或删除技能"
+    }
     fn parameters(&self) -> Value {
         json!({
             "type": "object",
@@ -100,17 +115,19 @@ impl Tool for SkillManage {
         })
     }
     async fn call(&self, args: Value) -> Result<String, AetherError> {
-        let action = args.get("action").and_then(|v| v.as_str()).ok_or(
-            AetherError::ToolInvalidArgs("缺少 action 参数".into())
-        )?;
-        let name = args.get("name").and_then(|v| v.as_str()).ok_or(
-            AetherError::ToolInvalidArgs("缺少 name 参数".into())
-        )?;
+        let action = args
+            .get("action")
+            .and_then(|v| v.as_str())
+            .ok_or(AetherError::ToolInvalidArgs("缺少 action 参数".into()))?;
+        let name = args
+            .get("name")
+            .and_then(|v| v.as_str())
+            .ok_or(AetherError::ToolInvalidArgs("缺少 name 参数".into()))?;
 
         match action {
             "create" | "update" => {
                 let content = args.get("content").and_then(|v| v.as_str()).ok_or(
-                    AetherError::ToolInvalidArgs("create/update 需要 content 参数".into())
+                    AetherError::ToolInvalidArgs("create/update 需要 content 参数".into()),
                 )?;
                 let dir = skills_dir();
                 std::fs::create_dir_all(&dir).map_err(|e| AetherError::IoError(e.to_string()))?;
@@ -121,12 +138,14 @@ impl Tool for SkillManage {
             "delete" => {
                 let path = skills_dir().join(format!("{}.md", name));
                 if path.exists() {
-                    std::fs::remove_file(&path)
-                        .map_err(|e| AetherError::IoError(e.to_string()))?;
+                    std::fs::remove_file(&path).map_err(|e| AetherError::IoError(e.to_string()))?;
                 }
                 Ok(json!({"success": true, "action": "delete", "name": name}).to_string())
             }
-            _ => Err(AetherError::ToolInvalidArgs(format!("不支持的动作: {}", action))),
+            _ => Err(AetherError::ToolInvalidArgs(format!(
+                "不支持的动作: {}",
+                action
+            ))),
         }
     }
 }

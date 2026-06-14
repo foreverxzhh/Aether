@@ -99,16 +99,19 @@ impl OpenAIProvider {
 
         // 处理 tool_calls（assistant 消息）
         if let Some(calls) = &msg.tool_calls {
-            obj["tool_calls"] = serde_json::json!(calls.iter().map(|tc| {
-                serde_json::json!({
-                    "id": tc.id,
-                    "type": "function",
-                    "function": {
-                        "name": tc.function.name,
-                        "arguments": tc.function.arguments,
-                    }
+            obj["tool_calls"] = serde_json::json!(calls
+                .iter()
+                .map(|tc| {
+                    serde_json::json!({
+                        "id": tc.id,
+                        "type": "function",
+                        "function": {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        }
+                    })
                 })
-            }).collect::<Vec<_>>());
+                .collect::<Vec<_>>());
         }
 
         // 处理 tool_call_id（tool 消息）
@@ -126,10 +129,9 @@ impl OpenAIProvider {
 
     /// 解析非流式响应
     fn parse_response(&self, body: &str) -> Result<ModelResponse, AetherError> {
-        let resp: OpenAIResponse =
-            serde_json::from_str(body).map_err(|e| {
-                AetherError::LlmParseError(format!("JSON 解析失败: {} (body: {}字节)", e, body.len()))
-            })?;
+        let resp: OpenAIResponse = serde_json::from_str(body).map_err(|e| {
+            AetherError::LlmParseError(format!("JSON 解析失败: {} (body: {}字节)", e, body.len()))
+        })?;
 
         if resp.choices.is_empty() {
             return Err(AetherError::LlmEmptyResponse);
@@ -140,7 +142,11 @@ impl OpenAIProvider {
 
         // 提取 content
         let content = msg.content.as_deref().and_then(|c| {
-            if c.is_empty() { None } else { Some(c.to_string()) }
+            if c.is_empty() {
+                None
+            } else {
+                Some(c.to_string())
+            }
         });
 
         // 提取 tool_calls
@@ -286,9 +292,12 @@ impl Streamable for OpenAIStream {
         }
 
         // 从网络读取更多数据
-        while let Some(bytes) = self.response.chunk().await.map_err(|e| {
-            AetherError::LlmError(format!("流式读取失败: {}", e))
-        })? {
+        while let Some(bytes) = self
+            .response
+            .chunk()
+            .await
+            .map_err(|e| AetherError::LlmError(format!("流式读取失败: {}", e)))?
+        {
             self.buffer.push_str(&String::from_utf8_lossy(&bytes));
 
             if let Some(chunk) = self.parse_buffer() {

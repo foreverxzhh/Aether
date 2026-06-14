@@ -1,5 +1,5 @@
-use std::path::{Path, PathBuf};
 use crate::error::AetherError;
+use std::path::{Path, PathBuf};
 
 /// L1 核心记忆（MEMORY.md）
 pub struct CoreMemory {
@@ -79,9 +79,11 @@ fn dirs_or_default() -> PathBuf {
     std::env::var("HERMES_HOME")
         .map(PathBuf::from)
         .unwrap_or_else(|_| {
-            PathBuf::from(std::env::var("HOME")
-                .or_else(|_| std::env::var("USERPROFILE"))
-                .unwrap_or_else(|_| ".".to_string()))
+            PathBuf::from(
+                std::env::var("HOME")
+                    .or_else(|_| std::env::var("USERPROFILE"))
+                    .unwrap_or_else(|_| ".".to_string()),
+            )
             .join(".hermes")
         })
 }

@@ -1,5 +1,3 @@
-use std::time::Duration;
-use tracing::{info, warn};
 use crate::agent::AIAgent;
 use crate::breaker::CircuitBreaker;
 use crate::budget::IterationBudget;
@@ -7,13 +5,14 @@ use crate::error::AetherError;
 use crate::prompt::PromptBuilder;
 use crate::types::message::Message;
 use crate::types::model::TurnResult;
+use std::time::Duration;
+use tracing::{info, warn};
 
 /// 判断错误是否可重试
 fn is_retryable(err: &AetherError) -> bool {
-    matches!(err,
-        AetherError::LlmError(_)
-        | AetherError::LlmEmptyResponse
-        | AetherError::LlmParseError(_)
+    matches!(
+        err,
+        AetherError::LlmError(_) | AetherError::LlmEmptyResponse | AetherError::LlmParseError(_)
     )
 }
 
@@ -22,7 +21,8 @@ pub async fn run_conversation(
     agent: &AIAgent,
     user_message: &str,
 ) -> Result<TurnResult, AetherError> {
-    let model = agent.model()
+    let model = agent
+        .model()
         .ok_or_else(|| AetherError::ConfigError("模型未配置".to_string()))?;
 
     let max_iterations = agent.config.max_iterations;
@@ -34,7 +34,11 @@ pub async fn run_conversation(
     let cwd = std::env::current_dir().ok();
     let cwd_str = cwd.as_ref().map(|p| p.to_string_lossy().to_string());
     let context_text = crate::context::ContextEngine::collect_context(cwd_str.as_deref());
-    let context_ref = if context_text.is_empty() { None } else { Some(context_text.as_str()) };
+    let context_ref = if context_text.is_empty() {
+        None
+    } else {
+        Some(context_text.as_str())
+    };
 
     let system_msg = PromptBuilder::build_system_message(
         agent.config.system_prompt.as_deref(),
@@ -73,7 +77,10 @@ pub async fn run_conversation(
             let mut response = None;
             for attempt in 0..3 {
                 match model.invoke(&messages, &tools).await {
-                    Ok(r) => { response = Some(r); break; }
+                    Ok(r) => {
+                        response = Some(r);
+                        break;
+                    }
                     Err(e) if is_retryable(&e) => {
                         warn!(attempt = attempt + 1, error = %e, "LLM 调用失败，重试中");
                         last_err = Some(e);
@@ -82,12 +89,19 @@ pub async fn run_conversation(
                             .duration_since(std::time::UNIX_EPOCH)
                             .map(|d| d.subsec_millis() as u64 % 150)
                             .unwrap_or(50);
-                        tokio::time::sleep(Duration::from_millis(500 * 2u64.pow(attempt) + jitter_ms)).await;
+                        tokio::time::sleep(Duration::from_millis(
+                            500 * 2u64.pow(attempt) + jitter_ms,
+                        ))
+                        .await;
                     }
-                    Err(e) => { return Err(e); }
+                    Err(e) => {
+                        return Err(e);
+                    }
                 }
             }
-            response.ok_or_else(|| last_err.unwrap_or(AetherError::LlmError("LLM 调用重试耗尽".to_string())))?
+            response.ok_or_else(|| {
+                last_err.unwrap_or(AetherError::LlmError("LLM 调用重试耗尽".to_string()))
+            })?
         };
 
         // 处理工具调用
@@ -101,10 +115,17 @@ pub async fn run_conversation(
             }
 
             // 添加 assistant 消息
-            let call_msgs: Vec<_> = calls.iter().map(|c| crate::types::message::MessageToolCall {
-                id: c.id.clone(), call_type: "function".to_string(),
-                function: crate::types::message::ToolFunctionCall { name: c.name.clone(), arguments: c.arguments.clone() },
-            }).collect();
+            let call_msgs: Vec<_> = calls
+                .iter()
+                .map(|c| crate::types::message::MessageToolCall {
+                    id: c.id.clone(),
+                    call_type: "function".to_string(),
+                    function: crate::types::message::ToolFunctionCall {
+                        name: c.name.clone(),
+                        arguments: c.arguments.clone(),
+                    },
+                })
+                .collect();
             messages.push(Message::assistant_tool_calls(call_msgs));
 
             // 并行执行工具
@@ -138,13 +159,14 @@ pub async fn run_conversation(
 
             // 压缩上下文（如果 token 超过上下文窗口的 75%）
             if messages.len() > 10 {
-                let current_tokens = crate::compression::ContextCompressor::estimate_tokens(&messages);
+                let current_tokens =
+                    crate::compression::ContextCompressor::estimate_tokens(&messages);
                 // 默认上下文 128K，75% ≈ 96000 tokens
                 if current_tokens > 96000 {
                     info!(current_tokens, "触发上下文压缩");
-                    match crate::compression::ContextCompressor::compress(
-                        &messages, 128000, model,
-                    ).await {
+                    match crate::compression::ContextCompressor::compress(&messages, 128000, model)
+                        .await
+                    {
                         Ok(result) => {
                             info!(
                                 original = result.original_message_count,
@@ -163,9 +185,7 @@ pub async fn run_conversation(
             // 没有工具调用 → 这就是最终回复
             final_response = response.content;
             if final_response.is_some() {
-                messages.push(Message::assistant_text(
-                    final_response.as_ref().unwrap(),
-                ));
+                messages.push(Message::assistant_text(final_response.as_ref().unwrap()));
             }
             break;
         }
@@ -173,9 +193,8 @@ pub async fn run_conversation(
         // Budget 耗尽时的优雅处理
         if budget.remaining() == 0 && final_response.is_none() {
             warn!("Budget 耗尽，请求模型总结");
-            let summarize_msg = Message::user(
-                "你的迭代预算已用尽。请总结你目前完成的工作，然后结束。",
-            );
+            let summarize_msg =
+                Message::user("你的迭代预算已用尽。请总结你目前完成的工作，然后结束。");
             messages.push(summarize_msg);
 
             let summary = model.invoke(&messages, &[]).await?;

@@ -1,19 +1,19 @@
-use std::sync::Arc;
-use tokio::sync::RwLock;
 use crate::config::AgentConfig;
 use crate::error::AetherError;
-use crate::llm::{ChatModel, Streamable};
 use crate::llm::provider::create_chat_model;
+use crate::llm::{ChatModel, Streamable};
 use crate::loop_mod;
-use crate::tools::ToolRegistry;
-use crate::tools::file_tools::{ReadFile, WriteFile, Patch, SearchFiles};
-use crate::tools::terminal_tool::Terminal;
-use crate::tools::web_tools::{WebSearch, WebExtract};
+use crate::tools::extra_tools::{CronJob, HomeAssistant, ImageGenerate};
+use crate::tools::file_tools::{Patch, ReadFile, SearchFiles, WriteFile};
 use crate::tools::memory_tool::Memory;
-use crate::tools::skills_tool::{SkillsList, SkillView, SkillManage};
-use crate::tools::extra_tools::{CronJob, ImageGenerate, HomeAssistant};
-use crate::tools::terminal_backends::{DockerTerminal, SshTerminal, ExecuteCode};
+use crate::tools::skills_tool::{SkillManage, SkillView, SkillsList};
+use crate::tools::terminal_backends::{DockerTerminal, ExecuteCode, SshTerminal};
+use crate::tools::terminal_tool::Terminal;
+use crate::tools::web_tools::{WebExtract, WebSearch};
+use crate::tools::ToolRegistry;
 use crate::types::model::{StreamChunk, TurnResult};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 
 /// Aether Agent 主类
 ///
@@ -77,7 +77,11 @@ impl AIAgent {
         registry.register(DockerTerminal);
         registry.register(SshTerminal);
         registry.register(ExecuteCode);
-        Self { config, model: None, tools: Arc::new(RwLock::new(registry)) }
+        Self {
+            config,
+            model: None,
+            tools: Arc::new(RwLock::new(registry)),
+        }
     }
 
     /// 获取 LLM 供应商引用
@@ -105,10 +109,17 @@ impl AIAgent {
     }
 
     pub fn get_tool_definitions(&self) -> Vec<serde_json::Value> {
-        self.tools.try_read().map(|r| r.get_definitions()).unwrap_or_default()
+        self.tools
+            .try_read()
+            .map(|r| r.get_definitions())
+            .unwrap_or_default()
     }
 
-    pub async fn execute_tool(&self, name: &str, args: serde_json::Value) -> Result<String, AetherError> {
+    pub async fn execute_tool(
+        &self,
+        name: &str,
+        args: serde_json::Value,
+    ) -> Result<String, AetherError> {
         let registry = self.tools.read().await;
         registry.execute(name, args).await
     }
@@ -137,7 +148,9 @@ impl AIAgent {
 
     pub async fn run_conversation(&self, user_message: &str) -> Result<TurnResult, AetherError> {
         if self.model.is_none() {
-            return Err(AetherError::ConfigError("模型未初始化。请先调用 init_model()".into()));
+            return Err(AetherError::ConfigError(
+                "模型未初始化。请先调用 init_model()".into(),
+            ));
         }
         let result = loop_mod::run_conversation(self, user_message).await?;
 
@@ -149,8 +162,13 @@ impl AIAgent {
             if let Ok(mut review_agent) = create_chat_model(&config) {
                 let hermes_home = crate::memory::core::default_hermes_home();
                 if let Err(e) = crate::memory::review::review_and_learn(
-                    &messages, tool_count, &hermes_home, review_agent.as_ref(),
-                ).await {
+                    &messages,
+                    tool_count,
+                    &hermes_home,
+                    review_agent.as_ref(),
+                )
+                .await
+                {
                     tracing::warn!(error = %e, "Background Review 失败");
                 }
             }
@@ -165,17 +183,25 @@ impl AIAgent {
     }
 
     pub fn provider_name(&self) -> &str {
-        self.model.as_ref().map(|m| m.provider_name()).unwrap_or("unknown")
+        self.model
+            .as_ref()
+            .map(|m| m.provider_name())
+            .unwrap_or("unknown")
     }
 
     pub async fn chat_stream<F: FnMut(StreamChunk)>(
-        &self, message: &str, mut callback: F,
+        &self,
+        message: &str,
+        mut callback: F,
     ) -> Result<String, AetherError> {
-        let model = self.model.as_ref().ok_or_else(|| {
-            AetherError::ConfigError("模型未初始化".into())
-        })?;
+        let model = self
+            .model
+            .as_ref()
+            .ok_or_else(|| AetherError::ConfigError("模型未初始化".into()))?;
         let system_msg = crate::prompt::PromptBuilder::build_system_message(
-            self.config.system_prompt.as_deref(), None, None,
+            self.config.system_prompt.as_deref(),
+            None,
+            None,
         );
         let user_msg = crate::types::message::Message::user(message);
         let messages = vec![system_msg, user_msg];

@@ -1,10 +1,10 @@
 //! Curator — 技能生命周期管理 + 定时调度
 
+use crate::error::AetherError;
+use serde::{Deserialize, Serialize};
 use std::path::Path;
 use std::sync::Arc;
 use tokio::sync::Mutex;
-use serde::{Deserialize, Serialize};
-use crate::error::AetherError;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CuratorState {
@@ -14,7 +14,13 @@ pub struct CuratorState {
 }
 
 impl Default for CuratorState {
-    fn default() -> Self { Self { last_run_at: None, paused: false, run_count: 0 } }
+    fn default() -> Self {
+        Self {
+            last_run_at: None,
+            paused: false,
+            run_count: 0,
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -25,12 +31,19 @@ pub struct CuratorConfig {
 }
 
 impl Default for CuratorConfig {
-    fn default() -> Self { Self { interval_hours: 168, stale_after_days: 30, archive_after_days: 90 } }
+    fn default() -> Self {
+        Self {
+            interval_hours: 168,
+            stale_after_days: 30,
+            archive_after_days: 90,
+        }
+    }
 }
 
 pub fn load_state(skills_dir: &Path) -> CuratorState {
     let p = skills_dir.join(".curator_state");
-    std::fs::read_to_string(&p).ok()
+    std::fs::read_to_string(&p)
+        .ok()
         .and_then(|s| serde_json::from_str(&s).ok())
         .unwrap_or_default()
 }
@@ -43,18 +56,26 @@ pub fn save_state(skills_dir: &Path, state: &CuratorState) {
 
 pub fn should_run(skills_dir: &Path, config: &CuratorConfig) -> bool {
     let state = load_state(skills_dir);
-    if state.paused { return false; }
+    if state.paused {
+        return false;
+    }
     state.last_run_at.map_or(true, |last| {
-        chrono::NaiveDateTime::parse_from_str(&last, "%Y-%m-%d %H:%M:%S").ok()
+        chrono::NaiveDateTime::parse_from_str(&last, "%Y-%m-%d %H:%M:%S")
+            .ok()
             .map_or(true, |t| {
                 (chrono::Utc::now().naive_utc() - t).num_hours() >= config.interval_hours as i64
             })
     })
 }
 
-pub fn run_curator(skills_dir: &Path, config: &CuratorConfig) -> Result<CuratorReport, AetherError> {
+pub fn run_curator(
+    skills_dir: &Path,
+    config: &CuratorConfig,
+) -> Result<CuratorReport, AetherError> {
     let mut report = CuratorReport::default();
-    if !skills_dir.exists() { return Ok(report); }
+    if !skills_dir.exists() {
+        return Ok(report);
+    }
 
     let archive = skills_dir.join(".archive");
     std::fs::create_dir_all(&archive).ok();
@@ -62,7 +83,9 @@ pub fn run_curator(skills_dir: &Path, config: &CuratorConfig) -> Result<CuratorR
     for entry in std::fs::read_dir(skills_dir).map_err(|e| AetherError::IoError(e.to_string()))? {
         let e = entry.map_err(|e| AetherError::IoError(e.to_string()))?;
         let path = e.path();
-        if path.extension().and_then(|s| s.to_str()) != Some("md") { continue; }
+        if path.extension().and_then(|s| s.to_str()) != Some("md") {
+            continue;
+        }
         if let Ok(meta) = std::fs::metadata(&path) {
             if let Ok(mtime) = meta.modified() {
                 let dt: chrono::DateTime<chrono::Utc> = mtime.into();
@@ -70,10 +93,16 @@ pub fn run_curator(skills_dir: &Path, config: &CuratorConfig) -> Result<CuratorR
                 if age >= config.archive_after_days as i64 {
                     let dest = archive.join(path.file_name().unwrap());
                     std::fs::rename(&path, &dest).ok();
-                    report.archived.push(path.file_name().unwrap().to_string_lossy().to_string());
+                    report
+                        .archived
+                        .push(path.file_name().unwrap().to_string_lossy().to_string());
                 } else if age >= config.stale_after_days as i64 {
-                    report.stale.push(path.file_name().unwrap().to_string_lossy().to_string());
-                } else { report.active += 1; }
+                    report
+                        .stale
+                        .push(path.file_name().unwrap().to_string_lossy().to_string());
+                } else {
+                    report.active += 1;
+                }
             }
         }
     }

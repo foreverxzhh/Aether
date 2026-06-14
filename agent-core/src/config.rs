@@ -110,7 +110,9 @@ pub struct AgentConfigBuilder {
 impl AgentConfigBuilder {
     /// 创建新的构建器
     pub fn new() -> Self {
-        Self { config: AgentConfig::default() }
+        Self {
+            config: AgentConfig::default(),
+        }
     }
 
     /// 设置 LLM 供应商

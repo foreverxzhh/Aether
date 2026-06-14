@@ -19,7 +19,11 @@ impl CircuitBreaker {
     /// 检查工具调用是否触发熔断
     /// 返回 true = 已熔断（应该阻止调用）
     pub fn check(&self, tool_name: &str, args: &serde_json::Value) -> bool {
-        let signature = format!("{}:{}", tool_name, serde_json::to_string(args).unwrap_or_default());
+        let signature = format!(
+            "{}:{}",
+            tool_name,
+            serde_json::to_string(args).unwrap_or_default()
+        );
         let hash = md5_compute(&signature);
 
         let mut hist = self.history.lock().unwrap();
@@ -58,8 +62,8 @@ mod tests {
         let args = json!({"query": "hello"});
         assert!(!b.check("test_tool", &args)); // 1st
         assert!(!b.check("test_tool", &args)); // 2nd
-        assert!(b.check("test_tool", &args));  // 3rd → 触发熔断
-        assert!(b.check("test_tool", &args));  // 4th → 仍熔断
+        assert!(b.check("test_tool", &args)); // 3rd → 触发熔断
+        assert!(b.check("test_tool", &args)); // 4th → 仍熔断
     }
 
     #[test]

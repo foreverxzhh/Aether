@@ -130,9 +130,7 @@ impl AetherError {
             | Self::MaxIterationsReached(_)
             | Self::SessionNotFound(_) => "AGENT",
 
-            Self::McpConnectionError(_)
-            | Self::McpServerError(_)
-            | Self::McpParseError(_) => "MCP",
+            Self::McpConnectionError(_) | Self::McpServerError(_) | Self::McpParseError(_) => "MCP",
 
             Self::DatabaseError(_) | Self::OutOfMemory(_) => "STORAGE",
 

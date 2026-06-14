@@ -15,16 +15,21 @@ pub struct ContextCompressor;
 impl ContextCompressor {
     /// 估算消息 token 数（简易版，1 token ≈ 2 字符）
     pub fn estimate_tokens(messages: &[Message]) -> u32 {
-        messages.iter().map(|m| {
-            let text_len = match &m.content {
-                Some(Content::Text(t)) => t.len() as u32 / 2,
-                _ => 0,
-            };
-            let tool_len = m.tool_calls.as_ref()
-                .map(|tc| serde_json::to_string(tc).unwrap_or_default().len() as u32 / 2)
-                .unwrap_or(0);
-            text_len + tool_len + 10
-        }).sum()
+        messages
+            .iter()
+            .map(|m| {
+                let text_len = match &m.content {
+                    Some(Content::Text(t)) => t.len() as u32 / 2,
+                    _ => 0,
+                };
+                let tool_len = m
+                    .tool_calls
+                    .as_ref()
+                    .map(|tc| serde_json::to_string(tc).unwrap_or_default().len() as u32 / 2)
+                    .unwrap_or(0);
+                text_len + tool_len + 10
+            })
+            .sum()
     }
 
     /// 判断是否需要压缩（超过上下文窗口的 75%）
@@ -52,19 +57,22 @@ impl ContextCompressor {
 
         // 中间部分做摘要
         let summary = if !middle.is_empty() {
-            let middle_text: Vec<String> = middle.iter().map(|m| {
-                let role = match m.role {
-                    MessageRole::User => "用户",
-                    MessageRole::Assistant => "助手",
-                    MessageRole::System => "系统",
-                    MessageRole::Tool => "工具",
-                };
-                let text = match &m.content {
-                    Some(Content::Text(t)) => t.clone(),
-                    _ => String::new(),
-                };
-                format!("{}: {}", role, text)
-            }).collect();
+            let middle_text: Vec<String> = middle
+                .iter()
+                .map(|m| {
+                    let role = match m.role {
+                        MessageRole::User => "用户",
+                        MessageRole::Assistant => "助手",
+                        MessageRole::System => "系统",
+                        MessageRole::Tool => "工具",
+                    };
+                    let text = match &m.content {
+                        Some(Content::Text(t)) => t.clone(),
+                        _ => String::new(),
+                    };
+                    format!("{}: {}", role, text)
+                })
+                .collect();
 
             let prompt = format!(
                 "请为以下对话生成简洁的摘要（保留关键信息和决定），不超过200字：\n\n{}",
@@ -85,7 +93,8 @@ impl ContextCompressor {
         compressed.extend_from_slice(head);
         if !summary.is_empty() {
             compressed.push(Message::system(format!(
-                "[以下是中间对话的摘要]\n{}", summary
+                "[以下是中间对话的摘要]\n{}",
+                summary
             )));
         }
         compressed.extend_from_slice(tail);

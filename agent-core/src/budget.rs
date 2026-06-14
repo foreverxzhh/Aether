@@ -24,7 +24,12 @@ impl IterationBudget {
             if current == 0 {
                 return false;
             }
-            match self.remaining.compare_exchange(current, current - 1, Ordering::AcqRel, Ordering::Acquire) {
+            match self.remaining.compare_exchange(
+                current,
+                current - 1,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
                 Ok(_) => return true,
                 Err(updated) => current = updated,
             }
@@ -38,7 +43,12 @@ impl IterationBudget {
             if current >= self.max_total {
                 return;
             }
-            match self.remaining.compare_exchange(current, current + 1, Ordering::AcqRel, Ordering::Acquire) {
+            match self.remaining.compare_exchange(
+                current,
+                current + 1,
+                Ordering::AcqRel,
+                Ordering::Acquire,
+            ) {
                 Ok(_) => {
                     self.refund_count.fetch_add(1, Ordering::Release);
                     return;

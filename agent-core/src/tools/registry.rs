@@ -1,20 +1,28 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::Instant;
-use std::sync::RwLock as StdRwLock;
+use crate::error::AetherError;
 use async_trait::async_trait;
 use serde_json::Value;
-use crate::error::AetherError;
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::RwLock as StdRwLock;
+use std::time::Instant;
 
 /// 工具抽象
 #[async_trait]
 pub trait Tool: Send + Sync {
     fn name(&self) -> &str;
-    fn toolset(&self) -> &str { "core" }
-    fn description(&self) -> &str { "" }
-    fn parameters(&self) -> Value { serde_json::json!({}) }
+    fn toolset(&self) -> &str {
+        "core"
+    }
+    fn description(&self) -> &str {
+        ""
+    }
+    fn parameters(&self) -> Value {
+        serde_json::json!({})
+    }
     async fn call(&self, args: Value) -> Result<String, AetherError>;
-    fn is_available(&self) -> bool { true }
+    fn is_available(&self) -> bool {
+        true
+    }
 }
 
 /// 工具注册表（用 Arc 避免跨 await 的锁问题）
@@ -39,9 +47,10 @@ impl ToolRegistry {
     /// 执行工具
     pub async fn execute(&self, name: &str, args: Value) -> Result<String, AetherError> {
         let tool_arc = {
-            let guard = self.tools.read().map_err(|e| {
-                AetherError::ToolExecutionError(format!("注册表锁错误: {}", e))
-            })?;
+            let guard = self
+                .tools
+                .read()
+                .map_err(|e| AetherError::ToolExecutionError(format!("注册表锁错误: {}", e)))?;
             guard.get(name).cloned()
         };
 
@@ -58,16 +67,19 @@ impl ToolRegistry {
             Err(_) => return vec![],
         };
 
-        guard.values()
+        guard
+            .values()
             .filter(|t| t.is_available())
-            .map(|t| serde_json::json!({
-                "type": "function",
-                "function": {
-                    "name": t.name(),
-                    "description": t.description(),
-                    "parameters": t.parameters(),
-                }
-            }))
+            .map(|t| {
+                serde_json::json!({
+                    "type": "function",
+                    "function": {
+                        "name": t.name(),
+                        "description": t.description(),
+                        "parameters": t.parameters(),
+                    }
+                })
+            })
             .collect()
     }
 

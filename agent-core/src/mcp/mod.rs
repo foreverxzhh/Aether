@@ -1,7 +1,7 @@
+use crate::error::AetherError;
+use serde_json::Value;
 use std::collections::HashMap;
 use std::io::{BufRead, BufReader, Write};
-use serde_json::Value;
-use crate::error::AetherError;
 
 /// MCP 工具描述
 #[derive(Debug, Clone)]
@@ -22,12 +22,17 @@ enum McpTransport {
         stdin: Option<std::process::ChildStdin>,
         stdout: Option<BufReader<std::process::ChildStdout>>,
     },
-    Http { base_url: String, client: reqwest::Client },
+    Http {
+        base_url: String,
+        client: reqwest::Client,
+    },
 }
 
 impl McpClient {
     pub async fn connect_stdio(command: &str) -> Result<Self, AetherError> {
-        let mut shell_cmd = std::process::Command::new(if cfg!(windows) { "cmd" } else {
+        let mut shell_cmd = std::process::Command::new(if cfg!(windows) {
+            "cmd"
+        } else {
             command.split_whitespace().next().unwrap_or("sh")
         });
         if cfg!(windows) {
@@ -58,7 +63,10 @@ impl McpClient {
     pub async fn connect_http(base_url: &str) -> Result<Self, AetherError> {
         let client = reqwest::Client::new();
         let mut mcp = Self {
-            transport: McpTransport::Http { base_url: base_url.to_string(), client },
+            transport: McpTransport::Http {
+                base_url: base_url.to_string(),
+                client,
+            },
             tools: HashMap::new(),
         };
         mcp.refresh_tools().await?;
@@ -69,20 +77,21 @@ impl McpClient {
     async fn send_stdio_request(&mut self, request: &str) -> Result<String, AetherError> {
         match &mut self.transport {
             McpTransport::Stdio { stdin, stdout } => {
-                let stdin = stdin.as_mut().ok_or_else(|| {
-                    AetherError::McpConnectionError("stdin 未打开".into())
-                })?;
+                let stdin = stdin
+                    .as_mut()
+                    .ok_or_else(|| AetherError::McpConnectionError("stdin 未打开".into()))?;
                 // 写入请求 (JSON-RPC over stdio: 单行 JSON + \n)
                 writeln!(stdin, "{}", request)
                     .map_err(|e| AetherError::McpConnectionError(format!("写入失败: {}", e)))?;
                 stdin.flush().ok();
 
                 // 读取一行响应
-                let stdout = stdout.as_mut().ok_or_else(|| {
-                    AetherError::McpConnectionError("stdout 未打开".into())
-                })?;
+                let stdout = stdout
+                    .as_mut()
+                    .ok_or_else(|| AetherError::McpConnectionError("stdout 未打开".into()))?;
                 let mut line = String::new();
-                stdout.read_line(&mut line)
+                stdout
+                    .read_line(&mut line)
                     .map_err(|e| AetherError::McpConnectionError(format!("读取失败: {}", e)))?;
                 Ok(line.trim().to_string())
             }
@@ -94,12 +103,15 @@ impl McpClient {
     async fn send_http_request(&self, request: &Value) -> Result<String, AetherError> {
         match &self.transport {
             McpTransport::Http { base_url, client } => {
-                let resp = client.post(format!("{}/jsonrpc", base_url))
+                let resp = client
+                    .post(format!("{}/jsonrpc", base_url))
                     .json(request)
                     .send()
                     .await
                     .map_err(|e| AetherError::McpConnectionError(e.to_string()))?;
-                resp.text().await.map_err(|e| AetherError::McpConnectionError(e.to_string()))
+                resp.text()
+                    .await
+                    .map_err(|e| AetherError::McpConnectionError(e.to_string()))
             }
             _ => Err(AetherError::McpConnectionError("当前传输不是 HTTP".into())),
         }
@@ -118,11 +130,14 @@ impl McpClient {
 
         if let Ok(resp) = serde_json::from_str::<McpListResponse>(&response) {
             for tool in resp.result.tools {
-                self.tools.insert(tool.name.clone(), McpTool {
-                    name: tool.name.clone(),
-                    description: tool.description.clone().unwrap_or_default(),
-                    parameters: tool.input_schema.unwrap_or(serde_json::json!({})),
-                });
+                self.tools.insert(
+                    tool.name.clone(),
+                    McpTool {
+                        name: tool.name.clone(),
+                        description: tool.description.clone().unwrap_or_default(),
+                        parameters: tool.input_schema.unwrap_or(serde_json::json!({})),
+                    },
+                );
             }
         }
 
@@ -144,7 +159,7 @@ impl McpClient {
                     .map_err(|e| AetherError::McpParseError(e.to_string()))?;
                 // 重新获取可变引用
                 Err(AetherError::McpConnectionError(
-                    "stdio 调用: 请使用 send_request 方法".into()
+                    "stdio 调用: 请使用 send_request 方法".into(),
                 ))
             }
         }

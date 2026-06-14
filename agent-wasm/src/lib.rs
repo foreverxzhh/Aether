@@ -1,8 +1,8 @@
-use wasm_bindgen::prelude::*;
-use web_sys::{Request, RequestInit, RequestMode, Headers};
-use serde_json::Value;
 use agent_core::types::message::{Content, Message, MessageRole};
 use agent_core::types::model::{FinishReason, ModelResponse, TokenUsage};
+use serde_json::Value;
+use wasm_bindgen::prelude::*;
+use web_sys::{Headers, Request, RequestInit, RequestMode};
 
 /// 浏览器版 Aether Agent（wasm-bindgen 导出）
 #[wasm_bindgen]
@@ -23,7 +23,8 @@ impl AetherWasm {
             _ => "https://api.deepseek.com/v1",
         };
         Self {
-            provider, model,
+            provider,
+            model,
             api_key: api_key.unwrap_or_default(),
             base_url: base_url.to_string(),
         }
@@ -58,7 +59,9 @@ impl AetherWasm {
         // 创建 Headers
         let headers = Headers::new().map_err(|e| JsValue::from_str(&format!("{:?}", e)))?;
         headers.set("Content-Type", "application/json").ok();
-        headers.set("Authorization", &format!("Bearer {}", self.api_key)).ok();
+        headers
+            .set("Authorization", &format!("Bearer {}", self.api_key))
+            .ok();
 
         // 构建请求
         let mut opts = RequestInit::new();
@@ -73,11 +76,15 @@ impl AetherWasm {
         // 发送请求
         let window = web_sys::window().ok_or_else(|| JsValue::from_str("no window"))?;
         let resp_promise = window.fetch_with_request(&request);
-        let resp = wasm_bindgen_futures::JsFuture::from(resp_promise).await
+        let resp = wasm_bindgen_futures::JsFuture::from(resp_promise)
+            .await
             .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?;
         let resp_obj: web_sys::Response = resp.into();
-        let text_promise = resp_obj.text().map_err(|e| JsValue::from_str(&format!("{:?}", e)))?;
-        let text = wasm_bindgen_futures::JsFuture::from(text_promise).await
+        let text_promise = resp_obj
+            .text()
+            .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?;
+        let text = wasm_bindgen_futures::JsFuture::from(text_promise)
+            .await
             .map_err(|e| JsValue::from_str(&format!("{:?}", e)))?;
         let text_str = text.as_string().unwrap_or_default();
 
@@ -92,7 +99,10 @@ impl AetherWasm {
             }
         }
 
-        Ok(format!("[无法解析]: {}", &text_str[..text_str.len().min(100)]))
+        Ok(format!(
+            "[无法解析]: {}",
+            &text_str[..text_str.len().min(100)]
+        ))
     }
 }
 

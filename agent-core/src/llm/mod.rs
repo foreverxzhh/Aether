@@ -1,13 +1,13 @@
-pub mod openai;
 pub mod anthropic;
-pub mod ollama;
-pub mod provider;
 pub mod caching;
+pub mod ollama;
+pub mod openai;
+pub mod provider;
 
-use async_trait::async_trait;
 use crate::error::AetherError;
 use crate::types::message::Message;
 use crate::types::model::{ModelResponse, StreamChunk};
+use async_trait::async_trait;
 
 /// LLM 供应商抽象
 #[async_trait]
@@ -53,27 +53,36 @@ pub struct SimpleTokenEstimator;
 
 impl TokenEstimator for SimpleTokenEstimator {
     fn estimate_messages_tokens(&self, messages: &[Message]) -> u32 {
-        messages.iter().map(|m| {
-            let role_cost = 4u32;
-            let text_cost = match &m.content {
-                Some(crate::types::message::Content::Text(t)) => (t.len() as u32 * 3) / 4,
-                Some(crate::types::message::Content::Parts(parts)) => {
-                    parts.iter().map(|p| match p {
-                        crate::types::message::ContentPart::Text { text } => (text.len() as u32 * 3) / 4,
-                        crate::types::message::ContentPart::ImageUrl { .. } => 1000,
-                    }).sum()
-                }
-                None => 0,
-            };
-            let tool_cost = if m.tool_calls.is_some() { 20 } else { 0 };
-            role_cost + text_cost + tool_cost
-        }).sum()
+        messages
+            .iter()
+            .map(|m| {
+                let role_cost = 4u32;
+                let text_cost = match &m.content {
+                    Some(crate::types::message::Content::Text(t)) => (t.len() as u32 * 3) / 4,
+                    Some(crate::types::message::Content::Parts(parts)) => parts
+                        .iter()
+                        .map(|p| match p {
+                            crate::types::message::ContentPart::Text { text } => {
+                                (text.len() as u32 * 3) / 4
+                            }
+                            crate::types::message::ContentPart::ImageUrl { .. } => 1000,
+                        })
+                        .sum(),
+                    None => 0,
+                };
+                let tool_cost = if m.tool_calls.is_some() { 20 } else { 0 };
+                role_cost + text_cost + tool_cost
+            })
+            .sum()
     }
 
     fn estimate_tool_tokens(&self, tools: &[serde_json::Value]) -> u32 {
-        tools.iter().map(|t| {
-            let schema_str = serde_json::to_string(t).unwrap_or_default();
-            (schema_str.len() as u32 * 3) / 4 + 10
-        }).sum()
+        tools
+            .iter()
+            .map(|t| {
+                let schema_str = serde_json::to_string(t).unwrap_or_default();
+                (schema_str.len() as u32 * 3) / 4 + 10
+            })
+            .sum()
     }
 }

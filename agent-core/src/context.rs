@@ -35,19 +35,29 @@ impl ContextEngine {
         if let Ok(read) = dir.read_dir() {
             for entry in read.flatten() {
                 let path = entry.path();
-                if path.file_name().map(|n| n.to_string_lossy().starts_with('.')).unwrap_or(false) {
+                if path
+                    .file_name()
+                    .map(|n| n.to_string_lossy().starts_with('.'))
+                    .unwrap_or(false)
+                {
                     continue; // 跳过隐藏文件
                 }
                 if path.is_dir() {
                     let sub = Self::list_files(&path, depth - 1);
                     if !sub.is_empty() {
-                        entries.push(format!("  {}/", path.file_name().unwrap_or_default().to_string_lossy()));
+                        entries.push(format!(
+                            "  {}/",
+                            path.file_name().unwrap_or_default().to_string_lossy()
+                        ));
                         for line in sub.lines() {
                             entries.push(format!("  {}", line));
                         }
                     }
                 } else if path.is_file() {
-                    entries.push(format!("  {}", path.file_name().unwrap_or_default().to_string_lossy()));
+                    entries.push(format!(
+                        "  {}",
+                        path.file_name().unwrap_or_default().to_string_lossy()
+                    ));
                 }
             }
         }

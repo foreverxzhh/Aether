@@ -1,9 +1,9 @@
-use std::path::{Path, PathBuf};
+use crate::error::AetherError;
+use crate::types::message::Message;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use crate::error::AetherError;
-use crate::types::message::Message;
+use std::path::{Path, PathBuf};
 
 /// 技能文件（agentskills.io 格式）
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -47,7 +47,8 @@ impl FileSkillStore {
         };
 
         let mut skill = Skill {
-            name: path.file_stem()
+            name: path
+                .file_stem()
                 .map(|s| s.to_string_lossy().to_string())
                 .unwrap_or_default(),
             description: String::new(),
@@ -69,17 +70,28 @@ impl FileSkillStore {
                 if let Some(ver) = val.get("version").and_then(|v| v.as_str()) {
                     skill.version = ver.to_string();
                 }
-                if let Some(cat) = val.get("category").or_else(|| {
-                    val.get("metadata").and_then(|m| m.get("hermes"))
-                        .and_then(|h| h.get("category"))
-                }).and_then(|v| v.as_str()) {
+                if let Some(cat) = val
+                    .get("category")
+                    .or_else(|| {
+                        val.get("metadata")
+                            .and_then(|m| m.get("hermes"))
+                            .and_then(|h| h.get("category"))
+                    })
+                    .and_then(|v| v.as_str())
+                {
                     skill.category = Some(cat.to_string());
                 }
-                if let Some(tags) = val.get("tags").or_else(|| {
-                    val.get("metadata").and_then(|m| m.get("hermes"))
-                        .and_then(|h| h.get("tags"))
-                }).and_then(|v| v.as_array()) {
-                    skill.tags = tags.iter()
+                if let Some(tags) = val
+                    .get("tags")
+                    .or_else(|| {
+                        val.get("metadata")
+                            .and_then(|m| m.get("hermes"))
+                            .and_then(|h| h.get("tags"))
+                    })
+                    .and_then(|v| v.as_array())
+                {
+                    skill.tags = tags
+                        .iter()
                         .filter_map(|t| t.as_str().map(|s| s.to_string()))
                         .collect();
                 }
@@ -103,11 +115,16 @@ impl crate::memory::Memory for FileSkillStore {
         let mut count = 0;
         if let Ok(entries) = std::fs::read_dir(&self.skills_dir) {
             for entry in entries.flatten() {
-                if count >= limit { break; }
+                if count >= limit {
+                    break;
+                }
                 let path = entry.path();
                 if path.extension().and_then(|e| e.to_str()) == Some("md") {
                     if let Ok(skill) = Self::parse_skill_file(&path) {
-                        if skill.name.contains(query) || skill.description.contains(query) || skill.content.contains(query) {
+                        if skill.name.contains(query)
+                            || skill.description.contains(query)
+                            || skill.content.contains(query)
+                        {
                             let msg = Message::system(format!(
                                 "技能: {}\n描述: {}\n\n{}",
                                 skill.name, skill.description, skill.content

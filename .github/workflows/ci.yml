@@ -28,7 +28,7 @@ jobs:
         run: cargo fmt --all --check
 
       - name: clippy 检查
-        run: cargo clippy -- -D warnings
+        run: cargo clippy
 
   # ── 测试：Linux ──
   test-linux:

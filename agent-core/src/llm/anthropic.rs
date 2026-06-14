@@ -26,7 +26,9 @@ impl AnthropicProvider {
         Self {
             client,
             api_key: api_key.to_string(),
-            base_url: base_url.unwrap_or("https://api.anthropic.com/v1").to_string(),
+            base_url: base_url
+                .unwrap_or("https://api.anthropic.com/v1")
+                .to_string(),
             model: model.to_string(),
         }
     }
@@ -108,10 +110,14 @@ impl AnthropicProvider {
                 }
                 MessageRole::Tool => {
                     let tool_call_id = msg.tool_call_id.as_deref().unwrap_or("");
-                    let result = msg.content.as_ref().map(|c| match c {
-                        Content::Text(t) => t.clone(),
-                        _ => String::new(),
-                    }).unwrap_or_default();
+                    let result = msg
+                        .content
+                        .as_ref()
+                        .map(|c| match c {
+                            Content::Text(t) => t.clone(),
+                            _ => String::new(),
+                        })
+                        .unwrap_or_default();
 
                     api_messages.push(serde_json::json!({
                         "role": "user",
@@ -144,8 +150,13 @@ impl AnthropicProvider {
 
     /// 解析非流式响应
     fn parse_response(&self, body: &str) -> Result<ModelResponse, AetherError> {
-        let resp: AnthropicResponse = serde_json::from_str(body)
-            .map_err(|e| AetherError::LlmParseError(format!("Anthropic 响应解析失败: {} (body: {}字节)", e, body.len())))?;
+        let resp: AnthropicResponse = serde_json::from_str(body).map_err(|e| {
+            AetherError::LlmParseError(format!(
+                "Anthropic 响应解析失败: {} (body: {}字节)",
+                e,
+                body.len()
+            ))
+        })?;
 
         let mut content: Option<String> = None;
         let mut tool_calls = Vec::new();
@@ -156,8 +167,8 @@ impl AnthropicProvider {
                     content = Some(block.text.clone().unwrap_or_default());
                 }
                 "tool_use" => {
-                    let args = serde_json::to_string(&block.input)
-                        .unwrap_or_else(|_| "{}".to_string());
+                    let args =
+                        serde_json::to_string(&block.input).unwrap_or_else(|_| "{}".to_string());
                     tool_calls.push(crate::types::model::ToolCallInfo {
                         id: block.id.clone().unwrap_or_default(),
                         name: block.name.clone().unwrap_or_default(),
@@ -186,7 +197,11 @@ impl AnthropicProvider {
 
         Ok(ModelResponse {
             content,
-            tool_calls: if tool_calls.is_empty() { None } else { Some(tool_calls) },
+            tool_calls: if tool_calls.is_empty() {
+                None
+            } else {
+                Some(tool_calls)
+            },
             finish_reason,
             usage,
         })
@@ -211,7 +226,9 @@ impl ChatModel for AnthropicProvider {
         let body = self.build_request(messages, tools);
         let url = self.messages_url();
 
-        let response = self.client.post(&url)
+        let response = self
+            .client
+            .post(&url)
             .header("x-api-key", &self.api_key)
             .header("anthropic-version", "2023-06-01")
             .header("Content-Type", "application/json")
@@ -221,7 +238,9 @@ impl ChatModel for AnthropicProvider {
             .map_err(|e| AetherError::LlmError(format!("Anthropic 请求失败: {}", e)))?;
 
         let status = response.status();
-        let text = response.text().await
+        let text = response
+            .text()
+            .await
             .map_err(|e| AetherError::LlmError(format!("读取 Anthropic 响应失败: {}", e)))?;
 
         if !status.is_success() {
@@ -240,7 +259,9 @@ impl ChatModel for AnthropicProvider {
         _messages: &[Message],
         _tools: &[Value],
     ) -> Result<Box<dyn Streamable>, AetherError> {
-        Err(AetherError::UnsupportedApiMode("Anthropic 流式尚未实现".to_string()))
+        Err(AetherError::UnsupportedApiMode(
+            "Anthropic 流式尚未实现".to_string(),
+        ))
     }
 }
 

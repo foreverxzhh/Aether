@@ -1,9 +1,9 @@
 //! Background Review — 每轮对话后自动审查并生成记忆/技能
 
-use std::path::Path;
 use crate::error::AetherError;
-use crate::types::message::{Content, Message};
 use crate::memory::core::CoreMemory;
+use crate::types::message::{Content, Message};
+use std::path::Path;
 
 /// Hermes 移植的记忆审查提示词
 const MEMORY_REVIEW_PROMPT: &str = r#"
@@ -43,7 +43,16 @@ pub fn should_review(messages: &[Message], tool_call_count: usize) -> bool {
         return true;
     }
     // 用户纠正过（含有"不要"、"错了"等关键词）
-    let correction_words = ["不要", "错了", "不对", "stop", "don't", "wrong", "incorrect", "fix"];
+    let correction_words = [
+        "不要",
+        "错了",
+        "不对",
+        "stop",
+        "don't",
+        "wrong",
+        "incorrect",
+        "fix",
+    ];
     for msg in messages.iter().rev().take(3) {
         if let Some(Content::Text(t)) = &msg.content {
             let lower = t.to_lowercase();
@@ -66,7 +75,8 @@ pub async fn review_and_learn(
         return Ok(());
     }
 
-    let conversation_text: String = messages.iter()
+    let conversation_text: String = messages
+        .iter()
         .filter_map(|m| match &m.content {
             Some(Content::Text(t)) => Some(t.clone()),
             _ => None,

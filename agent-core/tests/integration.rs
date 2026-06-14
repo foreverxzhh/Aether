@@ -1,6 +1,6 @@
+use agent_core::config::AgentConfigBuilder;
 /// Aether 集成测试 — 覆盖核心路径
 use agent_core::*;
-use agent_core::config::AgentConfigBuilder;
 
 #[test]
 fn test_config_builder() {
@@ -23,7 +23,9 @@ fn test_config_builder() {
 #[test]
 fn test_config_defaults() {
     let config = AgentConfigBuilder::new()
-        .provider("openai").model("gpt-4o").build();
+        .provider("openai")
+        .model("gpt-4o")
+        .build();
 
     assert_eq!(config.max_iterations, 90);
     assert!(config.memory_enabled);
@@ -38,7 +40,9 @@ fn test_message_types() {
     assert!(matches!(sys.role, MessageRole::System));
     if let Some(Content::Text(t)) = sys.content {
         assert_eq!(t, "System prompt");
-    } else { panic!("Expected text content"); }
+    } else {
+        panic!("Expected text content");
+    }
 
     let user = Message::user("Hello");
     assert!(matches!(user.role, MessageRole::User));
@@ -76,8 +80,11 @@ fn test_model_response_types() {
         tool_calls: None,
         finish_reason: FinishReason::Stop,
         usage: Some(TokenUsage {
-            prompt_tokens: 10, completion_tokens: 5, total_tokens: 15,
-            cache_read_tokens: None, cache_creation_tokens: None,
+            prompt_tokens: 10,
+            completion_tokens: 5,
+            total_tokens: 15,
+            cache_read_tokens: None,
+            cache_creation_tokens: None,
         }),
     };
     assert_eq!(resp.content, Some("Hello".into()));
@@ -89,7 +96,10 @@ fn test_finish_reason_variants() {
     use agent_core::types::model::FinishReason;
     assert_eq!(FinishReason::from_str("stop"), FinishReason::Stop);
     assert_eq!(FinishReason::from_str("length"), FinishReason::Length);
-    assert_eq!(FinishReason::from_str("tool_calls"), FinishReason::ToolCalls);
+    assert_eq!(
+        FinishReason::from_str("tool_calls"),
+        FinishReason::ToolCalls
+    );
 }
 
 #[test]
@@ -97,7 +107,9 @@ fn test_budget_creation() {
     use agent_core::budget::IterationBudget;
     let b = IterationBudget::new(10);
     assert_eq!(b.remaining(), 10);
-    for _ in 0..10 { assert!(b.consume()); }
+    for _ in 0..10 {
+        assert!(b.consume());
+    }
     assert!(!b.consume());
 }
 
@@ -118,7 +130,9 @@ fn test_breaker_creation() {
 fn test_prompt_builder() {
     use agent_core::prompt::PromptBuilder;
     let msg = PromptBuilder::build_system_message(
-        Some("You are a test agent"), Some("Context: testing"), Some("Time: now")
+        Some("You are a test agent"),
+        Some("Context: testing"),
+        Some("Time: now"),
     );
     let text = match msg.content {
         Some(agent_core::types::message::Content::Text(t)) => t,
@@ -139,7 +153,11 @@ fn test_ctx_engine() {
 #[test]
 fn test_tool_def_creation() {
     use agent_core::types::tool::ToolDef;
-    let def = ToolDef::new("test_tool", "Test description", serde_json::json!({"type":"object"}));
+    let def = ToolDef::new(
+        "test_tool",
+        "Test description",
+        serde_json::json!({"type":"object"}),
+    );
     assert_eq!(def.def_type, "function");
     assert_eq!(def.function.name, "test_tool");
 }
@@ -148,9 +166,7 @@ fn test_tool_def_creation() {
 fn test_simple_token_estimator() {
     use agent_core::llm::SimpleTokenEstimator;
     use agent_core::llm::TokenEstimator;
-    let messages = vec![
-        agent_core::types::message::Message::user("Hello world!"),
-    ];
+    let messages = vec![agent_core::types::message::Message::user("Hello world!")];
     let tokens = SimpleTokenEstimator.estimate_messages_tokens(&messages);
     assert!(tokens > 0, "应返回非零 token 估算值");
 }
@@ -158,7 +174,10 @@ fn test_simple_token_estimator() {
 #[test]
 fn test_config_serialization_skips_api_key() {
     let config = AgentConfigBuilder::new()
-        .provider("openai").model("gpt-4o").api_key("secret").build();
+        .provider("openai")
+        .model("gpt-4o")
+        .api_key("secret")
+        .build();
     let json = serde_json::to_string(&config).unwrap();
     assert!(!json.contains("secret"), "api_key 不应出现在序列化输出中");
 }

@@ -9,7 +9,10 @@ pub struct CacheTracker {
 
 impl CacheTracker {
     pub fn new() -> Self {
-        Self { last_breakpoint: 0, is_dirty: false }
+        Self {
+            last_breakpoint: 0,
+            is_dirty: false,
+        }
     }
 
     /// 检测是否需要插入缓存断点（每 1000 token 一个）
@@ -39,7 +42,8 @@ impl CacheTracker {
 
     /// 检查是否应该阻止某次操作（缓存安全检查）
     pub fn would_break_cache(operation: &str) -> bool {
-        matches!(operation,
+        matches!(
+            operation,
             "reload_memory" | "switch_tools" | "rebuild_system_prompt"
         )
     }

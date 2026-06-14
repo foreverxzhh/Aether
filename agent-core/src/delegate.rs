@@ -1,8 +1,8 @@
-use crate::AIAgent;
 use crate::config::AgentConfig;
 use crate::error::AetherError;
 use crate::llm::ChatModel;
 use crate::types::message::Message;
+use crate::AIAgent;
 
 /// 子 Agent 委托
 pub struct Delegation;
@@ -33,14 +33,13 @@ impl Delegation {
         }
 
         let msg = format!("任务目标：{}\n\n请完成此任务并返回结果。", goal);
-        let messages = vec![
-            Message::system(&system),
-            Message::user(&msg),
-        ];
+        let messages = vec![Message::system(&system), Message::user(&msg)];
 
         // 调用 LLM
         let response = model.invoke(&messages, &[]).await?;
-        Ok(response.content.unwrap_or_else(|| "[子Agent无响应]".to_string()))
+        Ok(response
+            .content
+            .unwrap_or_else(|| "[子Agent无响应]".to_string()))
     }
 
     /// 批量并行委托

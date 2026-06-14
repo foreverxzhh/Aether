@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::types::message::Message;
+use serde::{Deserialize, Serialize};
 
 /// LLM 响应
 #[derive(Debug, Clone, Serialize, Deserialize)]

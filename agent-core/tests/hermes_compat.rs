@@ -14,8 +14,14 @@ const HERMES_ROOT: &str = concat!(env!("CARGO_MANIFEST_DIR"), "/../../hermes");
 fn test_hermes_source_exists() {
     let hermes = Path::new(HERMES_ROOT);
     assert!(hermes.exists(), "Hermes 源码不存在于 {}", HERMES_ROOT);
-    assert!(hermes.join("run_agent.py").exists(), "Hermes run_agent.py 不存在");
-    assert!(hermes.join("model_tools.py").exists(), "Hermes model_tools.py 不存在");
+    assert!(
+        hermes.join("run_agent.py").exists(),
+        "Hermes run_agent.py 不存在"
+    );
+    assert!(
+        hermes.join("model_tools.py").exists(),
+        "Hermes model_tools.py 不存在"
+    );
 }
 
 // ── 技能格式兼容性 ──
@@ -31,7 +37,8 @@ fn test_skill_format_compat() {
     assert!(!skill_files.is_empty(), "Hermes skills 目录为空");
 
     // 检查至少有一个 SKILL.md 文件
-    let skill_mds: Vec<_> = skill_files.iter()
+    let skill_mds: Vec<_> = skill_files
+        .iter()
         .filter(|p| p.file_name().map(|n| n == "SKILL.md").unwrap_or(false))
         .collect();
     assert!(!skill_mds.is_empty(), "未找到 SKILL.md 文件");
@@ -39,14 +46,20 @@ fn test_skill_format_compat() {
     // 每个 SKILL.md 必须有 frontmatter
     for path in &skill_mds {
         let content = std::fs::read_to_string(path).unwrap_or_default();
-        assert!(content.starts_with("---"), "SKILL.md {} 缺少 frontmatter", path.display());
+        assert!(
+            content.starts_with("---"),
+            "SKILL.md {} 缺少 frontmatter",
+            path.display()
+        );
     }
 }
 
 #[test]
 fn test_skill_parse_with_aether() {
     let hermes_skills = Path::new(HERMES_ROOT).join("skills");
-    if !hermes_skills.exists() { return; }
+    if !hermes_skills.exists() {
+        return;
+    }
 
     use agent_core::skills::FileSkillStore;
     for entry in walkdir(&hermes_skills, 3) {
@@ -54,8 +67,11 @@ fn test_skill_parse_with_aether() {
             // Aether 应能解析 Hermes 的技能文件
             if let Ok(skill) = FileSkillStore::parse_skill_file(&entry) {
                 assert!(!skill.name.is_empty(), "技能名称为空: {:?}", entry);
-                assert!(!skill.description.is_empty() || !skill.content.is_empty(),
-                    "技能描述和内容同时为空: {:?}", entry);
+                assert!(
+                    !skill.description.is_empty() || !skill.content.is_empty(),
+                    "技能描述和内容同时为空: {:?}",
+                    entry
+                );
             }
         }
     }
@@ -118,7 +134,8 @@ fn test_conversation_context_format() {
 #[test]
 fn test_memory_format_compat() {
     // Hermes 风格的 MEMORY.md 格式
-    let memory_content = "# User Preferences\n\n- Prefers concise answers\n- Works with Rust\n- Likes dark mode";
+    let memory_content =
+        "# User Preferences\n\n- Prefers concise answers\n- Works with Rust\n- Likes dark mode";
     let temp_dir = std::env::temp_dir().join("aether_mem_test");
     let mem_dir = temp_dir.join("memory");
     std::fs::create_dir_all(&mem_dir).ok();
@@ -145,7 +162,10 @@ fn test_user_profile_format_compat() {
     use agent_core::memory::core::UserProfile;
     let profile = UserProfile::new(&temp_dir);
     let content = profile.read().unwrap();
-    assert!(content.contains("Developer"), "应能读取 Hermes 风格的 USER.md");
+    assert!(
+        content.contains("Developer"),
+        "应能读取 Hermes 风格的 USER.md"
+    );
 
     std::fs::remove_dir_all(&temp_dir).ok();
 }
@@ -230,5 +250,10 @@ fn walkdir(dir: &Path, max_depth: u32) -> Vec<std::path::PathBuf> {
 /// 辅助：MessageRole → &str
 fn role_name(r: &agent_core::types::message::MessageRole) -> &'static str {
     use agent_core::types::message::MessageRole::*;
-    match r { System => "system", User => "user", Assistant => "assistant", Tool => "tool" }
+    match r {
+        System => "system",
+        User => "user",
+        Assistant => "assistant",
+        Tool => "tool",
+    }
 }

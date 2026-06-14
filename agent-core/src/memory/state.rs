@@ -1,10 +1,10 @@
-use std::path::Path;
-use std::sync::Mutex;
-use async_trait::async_trait;
-use rusqlite::{params, Connection};
+use super::SessionRecord;
 use crate::error::AetherError;
 use crate::types::message::Message;
-use super::SessionRecord;
+use async_trait::async_trait;
+use rusqlite::{params, Connection};
+use std::path::Path;
+use std::sync::Mutex;
 
 pub struct SqliteSessionStore {
     conn: Mutex<Connection>,
@@ -33,27 +33,38 @@ impl SqliteSessionStore {
              CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(content, content=messages, content_rowid=id);"
         ).map_err(|e| AetherError::DatabaseError(format!("建表失败: {}", e)))?;
 
-        Ok(Self { conn: Mutex::new(conn) })
+        Ok(Self {
+            conn: Mutex::new(conn),
+        })
     }
 
     pub fn from_conn(conn: Connection) -> Self {
-        Self { conn: Mutex::new(conn) }
+        Self {
+            conn: Mutex::new(conn),
+        }
     }
 
     /// 在 Mutex 内执行闭包
     fn with_conn<F, T>(&self, f: F) -> Result<T, AetherError>
-    where F: FnOnce(&Connection) -> Result<T, AetherError>
+    where
+        F: FnOnce(&Connection) -> Result<T, AetherError>,
     {
-        let guard = self.conn.lock().map_err(|e| {
-            AetherError::DatabaseError(format!("数据库锁错误: {}", e))
-        })?;
+        let guard = self
+            .conn
+            .lock()
+            .map_err(|e| AetherError::DatabaseError(format!("数据库锁错误: {}", e)))?;
         f(&guard)
     }
 }
 
 fn to_role(s: &str) -> crate::types::message::MessageRole {
-    match s { "system" => MessageRole::System, "user" => MessageRole::User,
-              "assistant" => MessageRole::Assistant, "tool" => MessageRole::Tool, _ => MessageRole::User }
+    match s {
+        "system" => MessageRole::System,
+        "user" => MessageRole::User,
+        "assistant" => MessageRole::Assistant,
+        "tool" => MessageRole::Tool,
+        _ => MessageRole::User,
+    }
 }
 use crate::types::message::MessageRole;
 
@@ -125,7 +136,11 @@ impl super::SessionStore for SqliteSessionStore {
         })
     }
 
-    async fn search_sessions(&self, query: &str, limit: usize) -> Result<Vec<SessionRecord>, AetherError> {
+    async fn search_sessions(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SessionRecord>, AetherError> {
         self.with_conn(|conn| {
             let mut stmt = conn.prepare(
                 "SELECT DISTINCT s.id,s.parent_session_id,s.source,s.model,s.provider,s.created_at,s.updated_at
@@ -160,12 +175,18 @@ impl super::SessionStore for SqliteSessionStore {
 
     async fn list_sessions(&self) -> Result<Vec<String>, AetherError> {
         self.with_conn(|conn| {
-            let mut stmt = conn.prepare("SELECT id FROM sessions ORDER BY updated_at DESC")
+            let mut stmt = conn
+                .prepare("SELECT id FROM sessions ORDER BY updated_at DESC")
                 .map_err(|e| AetherError::DatabaseError(e.to_string()))?;
-            let ids = stmt.query_map([], |row| row.get::<_, String>(0))
+            let ids = stmt
+                .query_map([], |row| row.get::<_, String>(0))
                 .map_err(|e| AetherError::DatabaseError(e.to_string()))?;
             let mut results = Vec::new();
-            for id in ids { if let Ok(id) = id { results.push(id); } }
+            for id in ids {
+                if let Ok(id) = id {
+                    results.push(id);
+                }
+            }
             Ok(results)
         })
     }

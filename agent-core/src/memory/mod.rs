@@ -1,11 +1,11 @@
-pub mod state;
 pub mod core;
-pub mod review;
 pub mod curator;
+pub mod review;
+pub mod state;
 
-use async_trait::async_trait;
 use crate::error::AetherError;
 use crate::types::message::Message;
+use async_trait::async_trait;
 
 /// 记忆存储抽象
 #[async_trait]
@@ -20,7 +20,11 @@ pub trait Memory: Send + Sync {
 pub trait SessionStore: Send + Sync {
     async fn save_session(&self, session: &SessionRecord) -> Result<(), AetherError>;
     async fn load_session(&self, session_id: &str) -> Result<SessionRecord, AetherError>;
-    async fn search_sessions(&self, query: &str, limit: usize) -> Result<Vec<SessionRecord>, AetherError>;
+    async fn search_sessions(
+        &self,
+        query: &str,
+        limit: usize,
+    ) -> Result<Vec<SessionRecord>, AetherError>;
     async fn delete_session(&self, session_id: &str) -> Result<(), AetherError>;
     async fn list_sessions(&self) -> Result<Vec<String>, AetherError>;
 }
