@@ -1,0 +1,40 @@
+// Aether SDK — UniFFI Interface Definition
+// 跨平台语言绑定（Kotlin / Swift / C#）
+
+namespace aether {};
+
+// ── 错误类型 ──
+
+[Error]
+enum AetherSdkError {
+    "LlmError",
+    "ConfigError",
+    "RuntimeError",
+    "IoError",
+};
+
+// ── Agent 配置 ──
+
+dictionary SdkConfig {
+    string provider;
+    string model;
+    string? api_key;
+    string? base_url;
+    string? system_prompt;
+};
+
+// ── Agent 主接口 ──
+
+interface AetherAgent {
+    // 构造函数（传入配置）
+    [Name=with_config]
+    constructor(SdkConfig config);
+
+    // 初始化 LLM 供应商（异步）
+    [Throws=AetherSdkError]
+    void init_model();
+
+    // 同步对话
+    [Throws=AetherSdkError]
+    string chat(string message);
+};

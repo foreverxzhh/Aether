@@ -1,10 +1,17 @@
+#[cfg(feature = "uniffi")]
+#[path = "uniffi.rs"]
+pub mod uniffi_sdk;
+
+#[cfg(feature = "uniffi")]
+uniffi::setup_scaffolding!("agent");
+
 #[cfg(feature = "wasm")]
 pub mod wasm;
 
 use agent_core::AIAgent;
 use agent_core::config::AgentConfig;
 
-/// 创建 Agent（供其他模块使用）
+/// 创建 Agent（供 CLI 和其他模块使用）
 pub fn create_agent(
     provider: &str,
     model: &str,
