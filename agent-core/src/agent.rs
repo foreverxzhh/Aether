@@ -13,13 +13,47 @@ use crate::tools::memory_tool::Memory;
 use crate::tools::skills_tool::{SkillsList, SkillView, SkillManage};
 use crate::types::model::{StreamChunk, TurnResult};
 
+/// Aether Agent 主类
+///
+/// 驱动 ReAct 循环（推理→行动→观察），管理 LLM 供应商、工具系统和记忆。
+///
+/// # 示例
+///
+/// ```rust,no_run
+/// use agent_core::*;
+/// use agent_core::config::AgentConfigBuilder;
+///
+/// # async fn example() {
+/// let mut agent = AIAgent::new(
+///     AgentConfigBuilder::new()
+///         .provider("deepseek")
+///         .model("deepseek-v4-flash")
+///         .api_key(std::env::var("DEEPSEEK_API_KEY").unwrap_or_default())
+///         .build()
+/// );
+/// agent.init_model().await.unwrap();
+///
+/// // 同步对话
+/// let reply = agent.chat("你好").await.unwrap();
+///
+/// // 流式对话
+/// agent.chat_stream("讲个故事", |chunk| {
+///     print!("{}", chunk.delta);
+/// }).await.unwrap();
+/// # }
+/// ```
 pub struct AIAgent {
+    /// Agent 配置
     pub config: AgentConfig,
     model: Option<Box<dyn ChatModel>>,
     pub(crate) tools: Arc<RwLock<ToolRegistry>>,
 }
 
 impl AIAgent {
+    /// 创建新的 Agent 实例
+    ///
+    /// 自动注册 11 个内置工具（文件/终端/Web/记忆/技能）。
+    /// 创建后需要调用 `init_model()` 初始化 LLM。
     pub fn new(config: AgentConfig) -> Self {
         let registry = ToolRegistry::new();
         registry.register(ReadFile);
@@ -36,10 +70,24 @@ impl AIAgent {
         Self { config, model: None, tools: Arc::new(RwLock::new(registry)) }
     }
 
+    /// 获取 LLM 供应商引用
+    ///
+    /// 返回 `None` 表示 `init_model()` 尚未调用。
     pub fn model(&self) -> Option<&dyn ChatModel> {
         self.model.as_deref()
     }
 
+    /// 初始化 LLM 供应商
+    ///
+    /// 根据 `config.provider` 创建对应的供应商实例：
+    /// - `openai` → OpenAI GPT
+    /// - `anthropic` → Anthropic Claude
+    /// - `deepseek` → DeepSeek
+    /// - `ollama` → 本地 Ollama
+    ///
+    /// # 错误
+    ///
+    /// 返回 `ConfigError`（未知供应商或不完整配置）。
     pub async fn init_model(&mut self) -> Result<(), AetherError> {
         let model = create_chat_model(&self.config)?;
         self.model = Some(model);
@@ -55,6 +103,23 @@ impl AIAgent {
         registry.execute(name, args).await
     }
 
+    /// 与 Agent 对话（同步）
+    ///
+    /// 发送一条消息并等待完整回复。
+    /// 内部会驱动 ReAct 循环直到 LLM 返回最终回复或工具调用完成。
+    ///
+    /// # 示例
+    ///
+    /// ```rust,no_run
+    /// # use agent_core::*;
+    /// # use agent_core::config::AgentConfigBuilder;
+    /// # async fn example() {
+    /// # let mut agent = AIAgent::new(AgentConfigBuilder::new().provider("deepseek").model("m").build());
+    /// # agent.init_model().await.unwrap();
+    /// let reply = agent.chat("你好").await.unwrap();
+    /// println!("{}", reply);
+    /// # }
+    /// ```
     pub async fn chat(&self, message: &str) -> Result<String, AetherError> {
         let result = self.run_conversation(message).await?;
         Ok(result.final_response.unwrap_or_default())
