@@ -9,14 +9,16 @@
 - **Rust** 1.94.0+（见 `rust-toolchain.toml`）
 - **Windows**: Visual Studio Build Tools 2022（MSVC）
 - **macOS / Linux**: GCC / Clang
+- **Android**: NDK r27+（[下载](https://developer.android.com/ndk/downloads)）
+- **iOS**: Xcode 15+ (仅 macOS)
 
 ```bash
 # 确认 Rust 已安装
 rustc --version   # ≥ 1.94.0
 cargo --version
 
-# 安装 wasm 编译目标（后续 Web SDK 需要）
-rustup target add wasm32-unknown-unknown
+# 安装 Android 编译目标（如需构建 Android SDK）
+rustup target add aarch64-linux-android
 ```
 
 ---
@@ -180,26 +182,73 @@ match agent.chat("你好").await {
 
 ---
 
-## 6. 项目结构
+## 6. 平台 SDK 使用
+
+### Android (Kotlin)
+
+```kotlin
+// 在 Android 应用中使用 Aether
+val agent = Aether(
+    provider = "deepseek",
+    model = "deepseek-v4-flash",
+    apiKey = "sk-xxx"
+)
+agent.initModel()
+val reply = agent.chat("你好")
+```
+
+构建步骤：
+1. 安装 NDK：`bash scripts/build-android.sh`
+2. 在 `sdks/android/src/main/jniLibs/` 中生成 `.so` 文件
+3. 用 Android Studio 打开 `examples/android-demo/` 运行
+
+### Windows (C#)
+
+```csharp
+var agent = new AetherAgent("deepseek", "deepseek-v4-flash", "sk-xxx");
+agent.InitModel();
+var reply = agent.Chat("你好");
+```
+
+构建步骤：
+```powershell
+pwsh scripts/build-windows.ps1  # 生成 NuGet 包
+```
+
+---
+
+## 7. 项目结构
 
 ```
 Aether/
 ├── Cargo.toml              ← 工作空间配置
+├── README.md               ← 项目说明（中英双语）
 ├── agent-core/             ← SDK 核心库（所有业务逻辑）
-│   ├── src/
-│   │   ├── lib.rs          ← 库入口，公开 API
-│   │   ├── agent.rs        ← AIAgent 主类
-│   │   ├── loop_mod.rs     ← ReAct 循环
-│   │   ├── llm/            ← LLM 供应商
-│   │   ├── tools/          ← 工具系统
-│   │   ├── memory/         ← 记忆 + 会话存储
-│   │   ├── skills/         ← 技能系统
-│   │   ├── mcp/            ← MCP 协议
-│   │   └── ...
-│   └── tests/
-├── agent-bindings/         ← CLI 工具 + 平台绑定
+│   ├── src/agent.rs        ← AIAgent 主类
+│   ├── src/loop_mod.rs     ← ReAct 循环
+│   ├── src/llm/            ← LLM 供应商（OpenAI/Anthropic/DeepSeek/Ollama）
+│   ├── src/tools/          ← 工具系统（文件/终端/Web/记忆/技能）
+│   ├── src/memory/         ← 记忆 + SQLite 会话存储
+│   ├── src/skills/         ← 技能系统（agentskills.io）
+│   ├── src/mcp/            ← MCP 协议
+│   ├── src/compression/    ← 上下文压缩
+│   └── src/error.rs        ← 统一错误枚举（22 种错误码）
+├── agent-bindings/         ← CLI 工具 + C API + UniFFI + WASM
 │   └── src/bin/cli.rs      ← CLI 入口
-└── docs/                   ← 文档
+├── sdks/
+│   ├── android/            ← Android Kotlin SDK（Gradle 项目）
+│   ├── ios/                ← iOS Swift 绑定
+│   └── dotnet/             ← Windows C# SDK（NuGet 项目）
+├── examples/
+│   └── android-demo/       ← Android Demo App
+├── scripts/
+│   ├── build-android.sh    ← Android 一键编译
+│   └── build-windows.ps1   ← Windows 一键打包
+└── docs/
+    ├── implementation-plan.md   ← 实现方案
+    ├── requirements.md          ← 需求文档
+    ├── tasks.md                 ← 任务列表
+    └── getting-started.md       ← 本文档
 ```
 
 ---
