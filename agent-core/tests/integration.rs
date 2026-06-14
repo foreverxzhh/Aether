@@ -199,8 +199,7 @@ fn test_compression_estimator() {
 #[test]
 fn test_profile_manager() {
     use agent_core::profile::ProfileManager;
-    let temp = std::env::temp_dir().join("aether_profile_test");
-    let pm = ProfileManager::new(&temp);
+    let pm = ProfileManager::new();
     let profiles = pm.list_profiles().unwrap();
     assert!(profiles.contains(&"default".to_string()));
 }
