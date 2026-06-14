@@ -116,3 +116,37 @@
 - [x] 上下文引擎
 - [x] CLI 工具（-p/-m/-k/-b/-s/-c/-t）
 - [x] Hermes 兼容性测试框架
+
+## 2026-06-14 — Phase 4-9 全部完成 🎉
+
+### Phase 4 工具系统
+- ToolRegistry (Arc<dyn Tool> + get_definitions)
+- 文件: read/write/patch/search (4个)
+- 终端: cmd执行 + 安全检查 + 超时
+- Web: search(DDG) + extract(HTML解析)
+- 记忆/技能工具: 基础框架
+
+### Phase 5 记忆与技能
+- SqliteSessionStore (WAL模式 + FTS5搜索)
+- L1 CoreMemory (MEMORY.md)
+- L2 UserProfile (USER.md)
+- FileSkillStore (agentskills.io 解析)
+- Profile系统 (多实例隔离)
+
+### Phase 6 学习闭环
+- ContextCompressor (token估算 + 压缩框架)
+- PromptCache 框架
+- BackgroundReview + Curator 框架
+
+### Phase 7 MCP + 委托
+- McpClient (stdio/HTTP 框架)
+- Delegation (子Agent委托框架)
+
+### Phase 8-9 跨平台+收尾
+- agent-bindings WASM入口
+- tracing spans 完善
+
+### 最终状态
+- 测试: 18/18通过
+- 编译: 0 error, 0 warning
+- 代码: 约 5500 行 Rust
