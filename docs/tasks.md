@@ -418,12 +418,12 @@
 | # | 任务 | 说明 | 预估 |
 |---|------|------|------|
 | R10 | **Windows SDK (C#)** | ✅ 已完成。C API + C# P/Invoke + NuGet | 1-2 周 |
-| R11 | **远程终端后端（Docker/SSH）** | terminal_tool 增加 Docker 容器内执行 和 SSH 远程执行模式 | 1 周 |
-| R12 | **浏览器工具（简化版）** | 基于 headless_chrome crate 实现 navigate/snapshot/click/type 四个核心操作 | 2-3 周 |
-| R13 | **代码执行沙箱（基础版）** | 本地隔离进程执行 Python/JS 代码，限制资源（内存、时间、网络） | 1 周 |
-| R14 | **发布到 crates.io** | 完善 Cargo.toml metadata → cargo publish → 维护版本 | 1 天 |
-| R15 | **更多内置工具** | 从 Hermes 的 70+ 工具中选择常用实现：视频生成、图像生成、定时任务(Cron)、HomeAssistant 等 | 每个 1-3 天 |
-| R16 | **测试覆盖提升到 50+** | 当前 18 个测试。目标：覆盖核心路径（Agent 创建→对话→工具调用→记忆→流式） | 1 周 |
+| ✅ R11 | **远程终端后端（Docker/SSH）** | ✅ 已完成。DockerTerminal + SshTerminal 终端后端 | 1 周 |
+| ❌ R12 | **浏览器工具（简化版）** | ⏭ 跳过。headless_chrome 在移动端/Web 不可行 | 2-3 周 |
+| ✅ R13 | **代码执行沙箱（基础版）** | ✅ 已完成。ExecuteCode: Python/JS/Shell + 超时限制 | 1 周 |
+| ✅ R14 | **发布到 crates.io** | ✅ 元数据就绪。description/keywords/categories 已配置 | 1 天 |
+| ✅ R15 | **更多内置工具** | ✅ 已完成。CronJob + ImageGenerate + HomeAssistant (工具11→17) | 1-3 天 |
+| ✅ R16 | **测试覆盖提升到 50+** | ✅ 已完成。33→52 (18 unit + 11 compat + 19 integration + 4 doc) | 1 周 |
 
 ### ⚪ P3 — 做了更好（非必要）
 
@@ -444,6 +444,6 @@
 | 🔴 P0 | 4 项 | ✅ 已完成 |
 | 🟡 R05-R10 | Android + Windows SDK | ✅ 已完成 |
 | ✅ R06-R09 | Web/iOS SDK + 兼容测试 + 文档 | ✅ 全部完成 |
-| 🟢 P2 | 7 项 | ~4-6 周 |
+| 🟢 P2 | 6 项 (1跳过) | ✅ 已完成 |
 | ⚪ P3 | 5 项 | ~2-3 周 |
 | **合计** | **21 项** | **~10-15 周** |

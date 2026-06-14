@@ -120,10 +120,10 @@ var reply = agent.Chat("你好");
 | Android SDK | ✅ 真机验证 | ARM64 原生二进制→DeepSeek，完整对话成功 |
 | Windows SDK | ✅ 真机验证 | C# P/Invoke→agent_bindings.dll→DeepSeek，JSON 回复成功 |
 | iOS SDK | 🚧 下一步 | Swift 绑定已生成，需打包 XCFramework |
-| Web SDK | 🚧 下一步 | WASM 编译待工具链就绪 |
+| Web SDK | ✅ 真机验证 | agent-wasm crate, web_sys::fetch, 587KB .wasm, HTML Demo |
 | CI/CD | ✅ 就绪 | GitHub Actions: test-linux/windows/macos + cross-android/wasm |
-| 测试 | ✅ 31 通过 | 单元 + 集成 + Hermes 兼容 + 文档测试 |
-| crates.io | ❌ TODO | 发布 agent-core 到 Rust 生态 |
+| 测试 | ✅ 52 通过 | 18 单元 + 11 Hermes 兼容 + 19 集成 + 4 文档 |
+| crates.io | ✅ 元数据就绪 | description/keywords/categories 已配置 |
 
 ---
 
