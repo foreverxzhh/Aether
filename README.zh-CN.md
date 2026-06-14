@@ -119,7 +119,7 @@ var reply = agent.Chat("你好");
 | 核心引擎 (102 任务) | ✅ 100% | ReAct、LLM、工具、记忆、技能、MCP、压缩、学习闭环 |
 | Android SDK | ✅ 真机验证 | ARM64 原生二进制→DeepSeek，完整对话成功 |
 | Windows SDK | ✅ 真机验证 | C# P/Invoke→agent_bindings.dll→DeepSeek，JSON 回复成功 |
-| iOS SDK | 🚧 下一步 | Swift 绑定已生成，需打包 XCFramework |
+| iOS / macOS SDK | 🚧 代码就绪 | Swift 绑定+Pkg.swift 已完成，需 macOS 验证 |
 | Web SDK | ✅ 真机验证 | agent-wasm crate, web_sys::fetch, 587KB .wasm, HTML Demo |
 | CI/CD | ✅ 就绪 | GitHub Actions: test-linux/windows/macos + cross-android/wasm |
 | 测试 | ✅ 52 通过 | 18 单元 + 11 Hermes 兼容 + 19 集成 + 4 文档 |
