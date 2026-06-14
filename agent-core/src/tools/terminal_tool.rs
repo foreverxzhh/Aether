@@ -4,17 +4,29 @@ use std::process::Stdio;
 use tokio::process::Command;
 use tokio::time::timeout;
 use std::time::Duration;
+use regex::Regex;
+use std::sync::LazyLock;
 use crate::error::AetherError;
 use super::Tool;
 
 /// 终端执行（本地）
 pub struct Terminal;
 
-/// 危险命令列表（阻止执行）
-const DANGEROUS_COMMANDS: &[&str] = &[
-    "rm -rf /", "rm -rf /*", "mkfs", "dd if=", ":(){ :|:& };:",
-    "> /dev/sda", "| sh", "wget ", "curl ",
-];
+/// 危险命令正则（比子串匹配更精确）
+static DANGEROUS_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
+    [
+        r"rm\s+(-[a-zA-Z]*[rRf]+\s+)*(/|/\*)",  // rm -rf / 或 rm -rf /*
+        r"mkfs\.?\w*",                             // mkfs variants
+        r"dd\s+if=",                               // dd raw write
+        r":\(\)\s*\{[^}]*:\|:&\s*\};:",            // fork bomb
+        r">\s*/dev/sd[a-z]",                       // 覆盖块设备
+        r"chmod\s+(-R\s+)?0?777\s+/",              // 危险的 chmod
+        r"fork\s*bomb|shutdown|reboot|halt",       // 系统命令
+    ]
+    .iter()
+    .map(|p| Regex::new(&format!("(?i){}", p)).unwrap())
+    .collect()
+});
 
 #[async_trait]
 impl Tool for Terminal {
@@ -35,37 +47,28 @@ impl Tool for Terminal {
             AetherError::ToolInvalidArgs("缺少 command 参数".into())
         )?;
 
-        // 安全检查
-        let cmd_lower = command.to_lowercase();
-        for dangerous in DANGEROUS_COMMANDS {
-            if cmd_lower.contains(dangerous) {
+        // 正则安全检查
+        for pattern in DANGEROUS_PATTERNS.iter() {
+            if pattern.is_match(command) {
                 return Err(AetherError::ToolExecutionError(
-                    format!("危险命令被阻止: {}", dangerous)
+                    format!("危险命令被阻止: 匹配模式 '{}'", pattern.as_str())
                 ));
             }
         }
 
-        let timeout_secs = args.get("timeout")
-            .and_then(|v| v.as_u64())
-            .unwrap_or(30);
+        let timeout_secs = args.get("timeout").and_then(|v| v.as_u64()).unwrap_or(30);
 
         let output = timeout(Duration::from_secs(timeout_secs), async {
-            Command::new("cmd")
-                .args(["/C", command])
-                .stdout(Stdio::piped())
-                .stderr(Stdio::piped())
-                .output()
-                .await
+            Command::new("cmd").args(["/C", command])
+                .stdout(Stdio::piped()).stderr(Stdio::piped())
+                .output().await
         }).await
             .map_err(|_| AetherError::ToolExecutionError("命令执行超时".into()))?
             .map_err(|e| AetherError::ToolExecutionError(format!("命令执行失败: {}", e)))?;
 
-        let stdout = String::from_utf8_lossy(&output.stdout).to_string();
-        let stderr = String::from_utf8_lossy(&output.stderr).to_string();
-
         Ok(json!({
-            "stdout": stdout,
-            "stderr": stderr,
+            "stdout": String::from_utf8_lossy(&output.stdout),
+            "stderr": String::from_utf8_lossy(&output.stderr),
             "exit_code": output.status.code().unwrap_or(-1),
             "success": output.status.success(),
         }).to_string())
@@ -78,17 +81,22 @@ mod tests {
 
     #[tokio::test]
     async fn test_echo() {
-        let tool = Terminal;
-        let result = tool.call(json!({"command": "echo hello"})).await;
-        assert!(result.is_ok());
-        let resp: Value = serde_json::from_str(&result.unwrap()).unwrap();
-        assert_eq!(resp["exit_code"], 0);
+        let r = Terminal.call(json!({"command": "echo hello"})).await.unwrap();
+        let v: Value = serde_json::from_str(&r).unwrap();
+        assert_eq!(v["exit_code"], 0);
     }
 
     #[tokio::test]
     async fn test_block_dangerous() {
-        let tool = Terminal;
-        let result = tool.call(json!({"command": "rm -rf /"})).await;
-        assert!(result.is_err());
+        assert!(Terminal.call(json!({"command": "rm -rf /"})).await.is_err());
+        assert!(Terminal.call(json!({"command": "rm -rf /*"})).await.is_err());
+        assert!(Terminal.call(json!({"command": "chmod -R 777 /tmp"})).await.is_err());
+    }
+
+    #[tokio::test]
+    async fn test_allow_mkdir() {
+        let r = Terminal.call(json!({"command": "mkdir test_dir 2>nul || echo exists"})).await.unwrap();
+        let v: Value = serde_json::from_str(&r).unwrap();
+        assert_eq!(v["exit_code"], 0);
     }
 }

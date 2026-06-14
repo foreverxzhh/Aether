@@ -31,9 +31,14 @@ pub async fn run_conversation(
     let mut turn_count = 0u32;
 
     // ── 组装消息 ──
+    let cwd = std::env::current_dir().ok();
+    let cwd_str = cwd.as_ref().map(|p| p.to_string_lossy().to_string());
+    let context_text = crate::context::ContextEngine::collect_context(cwd_str.as_deref());
+    let context_ref = if context_text.is_empty() { None } else { Some(context_text.as_str()) };
+
     let system_msg = PromptBuilder::build_system_message(
         agent.config.system_prompt.as_deref(),
-        None,
+        context_ref,
         None,
     );
 
@@ -72,7 +77,12 @@ pub async fn run_conversation(
                     Err(e) if is_retryable(&e) => {
                         warn!(attempt = attempt + 1, error = %e, "LLM 调用失败，重试中");
                         last_err = Some(e);
-                        tokio::time::sleep(Duration::from_millis(500 * 2u64.pow(attempt))).await;
+                        // 简单随机抖动: 避免雷群效应
+                        let jitter_ms = std::time::SystemTime::now()
+                            .duration_since(std::time::UNIX_EPOCH)
+                            .map(|d| d.subsec_millis() as u64 % 150)
+                            .unwrap_or(50);
+                        tokio::time::sleep(Duration::from_millis(500 * 2u64.pow(attempt) + jitter_ms)).await;
                     }
                     Err(e) => { return Err(e); }
                 }
@@ -81,57 +91,50 @@ pub async fn run_conversation(
         };
 
         // 处理工具调用
-        if let Some(calls) = &response.tool_calls {
+        if let Some(calls) = response.tool_calls.clone() {
             // 熔断检查
-            for call in calls {
-                let args: serde_json::Value =
-                    serde_json::from_str(&call.arguments).unwrap_or(serde_json::json!({}));
+            for call in &calls {
+                let args = serde_json::from_str(&call.arguments).unwrap_or_default();
                 if breaker.check(&call.name, &args) {
-                    return Err(AetherError::CircuitBreakerTripped(
-                        call.name.clone(),
-                        5,
-                    ));
+                    return Err(AetherError::CircuitBreakerTripped(call.name.clone(), 5));
                 }
             }
 
-            // 添加 assistant 消息（含 tool_calls）
-            let assistant_msg = Message::assistant_tool_calls(
-                calls
-                    .iter()
-                    .map(|c| crate::types::message::MessageToolCall {
-                        id: c.id.clone(),
-                        call_type: "function".to_string(),
-                        function: crate::types::message::ToolFunctionCall {
-                            name: c.name.clone(),
-                            arguments: c.arguments.clone(),
-                        },
-                    })
-                    .collect(),
-            );
-            messages.push(assistant_msg);
+            // 添加 assistant 消息
+            let call_msgs: Vec<_> = calls.iter().map(|c| crate::types::message::MessageToolCall {
+                id: c.id.clone(), call_type: "function".to_string(),
+                function: crate::types::message::ToolFunctionCall { name: c.name.clone(), arguments: c.arguments.clone() },
+            }).collect();
+            messages.push(Message::assistant_tool_calls(call_msgs));
 
-            // 执行工具
-            for call in calls {
-                let args: serde_json::Value =
-                    serde_json::from_str(&call.arguments).unwrap_or(serde_json::json!({}));
-
-                info!(tool = call.name, "执行工具");
-                let result = agent.execute_tool(&call.name, args).await;
-
-                match result {
-                    Ok(output) => {
-                        info!(tool = call.name, "工具执行成功");
-                        let tool_msg = Message::tool_result(&call.id, &output);
-                        messages.push(tool_msg);
-                        all_tool_results.push(call.clone());
+            // 并行执行工具
+            let mut tool_futures = Vec::new();
+            let calls_owned = calls.clone();
+            for call in calls_owned {
+                let name = call.name;
+                let cid = call.id;
+                let args = serde_json::from_str(&call.arguments).unwrap_or_default();
+                let registry = agent.tools.clone();
+                tool_futures.push(tokio::spawn(async move {
+                    let result = registry.read().await.execute(&name, args).await;
+                    (cid, name, result)
+                }));
+            }
+            for r in futures::future::join_all(tool_futures).await {
+                match r {
+                    Ok((id, name, Ok(out))) => {
+                        info!(tool = %name, "工具执行成功");
+                        messages.push(Message::tool_result(&id, &out));
                     }
-                    Err(e) => {
-                        warn!(tool = call.name, error = %e, "工具执行失败");
-                        let err_msg = Message::tool_result(&call.id, &format!("错误: {}", e));
-                        messages.push(err_msg);
+                    Ok((id, name, Err(e))) => {
+                        warn!(tool = %name, error = %e, "工具执行失败");
+                        messages.push(Message::tool_result(&id, &format!("错误: {}", e)));
                     }
+                    Err(e) => warn!(error = %e, "工具线程崩溃"),
                 }
             }
+
+            all_tool_results.extend(calls);
 
             // 压缩上下文（如果 token 超过上下文窗口的 75%）
             if messages.len() > 10 {
