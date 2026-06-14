@@ -7,29 +7,32 @@ license.workspace = true
 repository.workspace = true
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
-reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"] }
+# 核心依赖（所有平台通用）
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 serde_yaml = "0.9"
-rusqlite = { version = "0.31", features = ["bundled"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
 async-trait = "0.1"
-futures = "0.3"
-uuid = { version = "1", features = ["v4"] }
 thiserror = "2"
 chrono = { version = "0.4", features = ["serde"] }
-inventory = "0.3"
-portable-pty = { version = "0.7", optional = true }
-similar = "2"
-glob = "0.3"
-scraper = "0.19"
 regex = "1"
 
+# 原生平台依赖
+tokio = { version = "1", features = ["full"], optional = true }
+reqwest = { version = "0.12", default-features = false, features = ["json", "stream", "rustls-tls"], optional = true }
+rusqlite = { version = "0.31", features = ["bundled"], optional = true }
+tracing = { version = "0.1", optional = true }
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"], optional = true }
+uuid = { version = "1", features = ["v4"], optional = true }
+futures = { version = "0.3", optional = true }
+inventory = { version = "0.3", optional = true }
+portable-pty = { version = "0.7", optional = true }
+similar = { version = "2", optional = true }
+glob = { version = "0.3", optional = true }
+scraper = { version = "0.19", optional = true }
+
 [features]
-default = []
-native = ["portable-pty"]
+default = ["native"]
+native = ["tokio", "reqwest", "rusqlite", "tracing", "tracing-subscriber", "uuid", "futures", "inventory", "portable-pty", "similar", "glob", "scraper"]
 
 [dev-dependencies]
 tempfile = "3"

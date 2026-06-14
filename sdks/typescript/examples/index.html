@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aether Web Demo</title>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family: system-ui, sans-serif; background:#0f172a; color:#e2e8f0; max-width:800px; margin:0 auto; padding:20px; }
+        h1 { color:#38bdf8; margin-bottom:20px; }
+        .card { background:#1e293b; border-radius:12px; padding:20px; margin-bottom:16px; }
+        input, textarea { width:100%; padding:10px; background:#334155; color:#e2e8f0; border:1px solid #475569; border-radius:8px; font-size:14px; margin-bottom:8px; }
+        button { background:#38bdf8; color:#0f172a; border:none; padding:10px 24px; border-radius:8px; font-size:16px; cursor:pointer; font-weight:bold; }
+        button:disabled { opacity:0.5; cursor:not-allowed; }
+        #response { background:#0f172a; border-radius:8px; padding:16px; min-height:100px; white-space:pre-wrap; margin-top:12px; }
+        .status { color:#94a3b8; font-size:13px; margin-top:8px; }
+    </style>
+</head>
+<body>
+
+<h1>🔮 Aether Web Demo</h1>
+
+<div class="card">
+    <h3>⚙️ 配置</h3>
+    <select id="provider" style="width:100%;padding:10px;background:#334155;color:#e2e8f0;border:1px solid #475569;border-radius:8px;margin-bottom:8px;">
+        <option value="deepseek">DeepSeek</option>
+        <option value="openai">OpenAI</option>
+    </select>
+    <input id="model" value="deepseek-v4-flash" placeholder="模型名称">
+    <input id="apiKey" type="password" placeholder="API Key">
+    <button id="initBtn" onclick="init()">🚀 初始化</button>
+    <div class="status" id="status">等待初始化...</div>
+</div>
+
+<div class="card" id="chatCard" style="display:none">
+    <textarea id="input" placeholder="输入消息...">你好，用一句话介绍你自己</textarea>
+    <button id="sendBtn" onclick="send()">发送</button>
+    <div id="response">等待对话...</div>
+</div>
+
+<script type="module">
+    import initWasm, { AetherWasm } from '../src/wasm/agent_wasm.js';
+
+    let agent = null;
+
+    window.init = async function() {
+        const btn = document.getElementById('initBtn');
+        const status = document.getElementById('status');
+        btn.disabled = true;
+        status.textContent = '正在加载 WASM...';
+
+        try {
+            await initWasm();
+            const provider = document.getElementById('provider').value;
+            const model = document.getElementById('model').value;
+            const key = document.getElementById('apiKey').value || null;
+            agent = new AetherWasm(provider, model, key);
+            status.textContent = '✅ Agent 就绪！';
+            document.getElementById('chatCard').style.display = 'block';
+        } catch (e) {
+            status.textContent = '❌ 初始化失败: ' + e;
+            btn.disabled = false;
+        }
+    };
+
+    window.send = async function() {
+        if (!agent) return;
+        const inp = document.getElementById('input');
+        const resp = document.getElementById('response');
+        const btn = document.getElementById('sendBtn');
+        btn.disabled = true;
+        resp.textContent = '🤖 思考中...';
+        try {
+            const reply = await agent.chat(inp.value.trim());
+            resp.textContent = reply;
+        } catch (e) {
+            resp.textContent = '❌ 错误: ' + e;
+        }
+        btn.disabled = false;
+    };
+</script>
+</body>
+</html>

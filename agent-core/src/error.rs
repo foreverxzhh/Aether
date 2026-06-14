@@ -94,12 +94,14 @@ impl From<serde_json::Error> for AetherError {
     }
 }
 
+#[cfg(feature = "rusqlite")]
 impl From<rusqlite::Error> for AetherError {
     fn from(e: rusqlite::Error) -> Self {
         AetherError::DatabaseError(e.to_string())
     }
 }
 
+#[cfg(feature = "reqwest")]
 impl From<reqwest::Error> for AetherError {
     fn from(e: reqwest::Error) -> Self {
         AetherError::LlmError(format!("HTTP 请求失败: {}", e))

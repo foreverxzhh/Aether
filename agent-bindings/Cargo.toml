@@ -36,6 +36,3 @@ name = "aether"
 path = "src/bin/cli.rs"
 required-features = ["cli"]
 
-[[bin]]
-name = "android-test"
-path = "src/bin/android-test.rs"
