@@ -20,5 +20,6 @@ pub mod loop_mod;
 pub use agent::AIAgent;
 pub use error::AetherError;
 pub use config::AgentConfig;
+pub use config::AgentConfigBuilder;
 pub use types::model::StreamChunk;
 pub use llm::Streamable;
