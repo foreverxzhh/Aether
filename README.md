@@ -6,6 +6,7 @@
     <img src="https://img.shields.io/badge/status-alpha-orange?style=flat" alt="Status: Alpha">
     <img src="https://img.shields.io/badge/tests-52%20passing-brightgreen?style=flat" alt="Tests: 52 passing">
 <img src="https://img.shields.io/badge/verified-Android%20%7C%20Windows%20%7C%20Web-brightgreen?style=flat" alt="Verified: Android, Windows, Web">
+<a href="https://github.com/foreverxzhh/Aether/actions"><img src="https://github.com/foreverxzhh/Aether/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat" alt="Platform: Cross-platform">
     <img src="https://img.shields.io/badge/built%20with-Rust-orange?style=flat" alt="Built with Rust">
     <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=flat" alt="中文"></a>
