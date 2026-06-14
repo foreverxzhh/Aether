@@ -201,3 +201,19 @@ R04 MCP 工具注册框架: API入口就绪
 - C# P/Invoke 包装（AetherAgent 类，自动 JSON 解析）
 - NuGet 项目（net6.0;net8.0）
 - build-windows.ps1 一键打包
+
+## 2026-06-14 — Code Review 修复 (1-10)
+
+修复项:
+1. 全局 Runtime（LazyLock tokio，避免每次调用创建/销毁）
+2. SQLite 锁评估通过（当前场景不严重）
+3. 终端安全: 子串→正则匹配，覆盖 7 种危险模式
+4. 文件路径安全: 拒绝绝对路径 + ParentDir 穿越
+5. SSRF 防护: 内网IP/云元数据/不安全协议拦截
+6. API Key: 内存明文存储（LLM 通病，日志路径已确认安全）
+7. 并行工具: tokio::spawn + join_all 并发执行
+8. 退避抖动: subsec_millis 随机性避免雷群
+9. ContextEngine 激活: 工作目录注入 system prompt
+10. Release 优化: LTO+strip+codegen-units=1
+
+测试: 31/31 通过（新增3个安全测试）
