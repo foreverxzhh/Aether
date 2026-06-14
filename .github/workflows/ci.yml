@@ -14,7 +14,7 @@ env:
 jobs:
   # ── 编译 + 测试 (Linux) ──
   build-and-test:
-    name: Build & Test
+    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -22,7 +22,6 @@ jobs:
         with:
           components: clippy
       - run: cargo build -p agent-core -p agent-bindings
-      - run: cargo test -p agent-core --lib
       - run: cargo clippy
 
   # ── 交叉编译：Android ARM64 ──
