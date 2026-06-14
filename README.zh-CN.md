@@ -117,12 +117,12 @@ var reply = agent.Chat("你好");
 | 模块 | 进度 | 说明 |
 |------|------|------|
 | 核心引擎 (102 任务) | ✅ 100% | ReAct、LLM、工具、记忆、技能、MCP、压缩、学习闭环 |
-| Android SDK | ✅ 可构建 | UniFFI Kotlin + Gradle 项目，NDK 交叉编译就绪 |
-| Windows SDK | ✅ 可构建 | C API + C# P/Invoke + NuGet 规范 |
+| Android SDK | ✅ 真机验证 | ARM64 原生二进制→DeepSeek，完整对话成功 |
+| Windows SDK | ✅ 真机验证 | C# P/Invoke→agent_bindings.dll→DeepSeek，JSON 回复成功 |
 | iOS SDK | 🚧 下一步 | Swift 绑定已生成，需打包 XCFramework |
 | Web SDK | 🚧 下一步 | WASM 编译待工具链就绪 |
-| CI/CD | ❌ TODO | GitHub Actions 多平台自动构建 |
-| 测试 | ✅ 29 通过 | 单元 + 集成 + Hermes 兼容 + 文档测试 |
+| CI/CD | ✅ 就绪 | GitHub Actions: test-linux/windows/macos + cross-android/wasm |
+| 测试 | ✅ 31 通过 | 单元 + 集成 + Hermes 兼容 + 文档测试 |
 | crates.io | ❌ TODO | 发布 agent-core 到 Rust 生态 |
 
 ---
