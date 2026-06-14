@@ -159,6 +159,11 @@ impl AIAgent {
         Ok(result)
     }
 
+    /// 获取当前 profile 的 HERMES_HOME 路径
+    pub fn hermes_home(&self) -> std::path::PathBuf {
+        crate::profile::ProfileManager::new().home()
+    }
+
     pub fn provider_name(&self) -> &str {
         self.model.as_ref().map(|m| m.provider_name()).unwrap_or("unknown")
     }

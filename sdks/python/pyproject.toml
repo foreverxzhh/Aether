@@ -1,0 +1,14 @@
+[project]
+name = "aether-sdk"
+version = "0.1.0"
+description = "Aether Agent SDK - Cross-platform AI Agent runtime"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+keywords = ["ai", "agent", "llm", "sdk", "cross-platform"]
+
+[project.urls]
+Repository = "https://github.com/foreverxzhh/aether"
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.backends._legacy:_Backend"
