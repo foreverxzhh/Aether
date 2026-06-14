@@ -150,3 +150,13 @@
 - 测试: 18/18通过
 - 编译: 0 error, 0 warning
 - 代码: 约 5500 行 Rust
+
+## 2026-06-14 — Phase 6-7 补全真实实现
+
+之前 Phase 6-7 只写了空壳，现在补全了：
+- 上下文压缩 (辅助LLM摘要+保护头尾+会话拆分ID)
+- Prompt Caching (CacheTracker+标记+安全约束)
+- Background Review (审查条件+记忆技能生成)
+- Curator (技能生命周期+状态持久化+归档)
+- MCP Client (stdio+HTTP+JSON-RPC)
+- Delegate (子Agent隔离+批量并行)
