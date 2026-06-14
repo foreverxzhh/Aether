@@ -109,7 +109,7 @@
 - [ ] T026 [P] [US1] 实现 3 种 API 模式分发（chat_completions/anthropic_messages/codex_responses）在 `agent-core/src/loop.rs`
 - [x] T027 [P] [US1] 实现迭代预算控制（AtomicU32，退还逻辑）在 `agent-core/src/budget.rs`
 - [x] T028 [P] [US1] 实现熔断器（CircuitBreaker，签名哈希+连续检测）在 `agent-core/src/breaker.rs`
-- [ ] T029 [US1] 实现流式响应（SSE 解析 + 可中断）在 `agent-core/src/loop.rs`
+- [x] T029 [US1] 实现流式响应（SSE 解析 + OpenAIStream + CLI --stream）在 `agent-core/src/llm/openai.rs`
 
 ### 错误恢复
 

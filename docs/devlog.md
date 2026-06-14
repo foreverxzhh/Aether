@@ -76,3 +76,20 @@
 - T029 流式响应
 - T030/T031 错误恢复
 - T033 ContextEngine
+
+## 2026-06-14 — Phase 3 小闭环2 完成
+
+### 完成的任务
+- **T029** 流式响应（SSE 解析 + OpenAIStream + CLI `--stream`）
+- **Provider**: deepseek 设为首选内建供应商（自动 base_url）
+- **CLI**: 新增 `-t/--stream` 参数，实时逐字输出
+
+### 验证
+- `aether -p deepseek -m deepseek-v4-flash -t -c "你好"` → 流式输出正常
+- 10/10 测试通过，编译 0 error
+
+### 剩余 Phase 3
+- T020 Anthropic 供应商
+- T021 Ollama 供应商
+- T030/T031 错误恢复
+- T033 ContextEngine
