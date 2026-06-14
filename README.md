@@ -4,8 +4,8 @@
   <p align="center">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat" alt="License: MIT"></a>
     <img src="https://img.shields.io/badge/status-alpha-orange?style=flat" alt="Status: Alpha">
-    <img src="https://img.shields.io/badge/tests-31%20passing-brightgreen?style=flat" alt="Tests: 31 passing">
-<img src="https://img.shields.io/badge/verified-Android%20%7C%20Windows-brightgreen?style=flat" alt="Verified: Android, Windows">
+    <img src="https://img.shields.io/badge/tests-33%20passing-brightgreen?style=flat" alt="Tests: 33 passing">
+<img src="https://img.shields.io/badge/verified-Android%20%7C%20Windows%20%7C%20Web-brightgreen?style=flat" alt="Verified: Android, Windows, Web">
     <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat" alt="Platform: Cross-platform">
     <img src="https://img.shields.io/badge/built%20with-Rust-orange?style=flat" alt="Built with Rust">
     <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=flat" alt="中文"></a>
@@ -28,7 +28,7 @@
 | Run on Android phone | ❌ | ✅ Kotlin SDK |
 | Run on iPhone | ❌ | ✅ Swift SDK |
 | Embed in Windows app | ❌ | ✅ C# SDK (verified) |
-| Run in browser | ❌ | ✅ WASM (coming) |
+| Run in browser | ❌ | ✅ WASM (587KB) |
 | Embed as Rust library | ❌ | ✅ `cargo add agent-core` |
 | Full Hermes feature parity | ✅ | ✅ Core engine + tools |
 | Performance | 🐍 Python | 🦀 Native compiled |
@@ -129,9 +129,9 @@ var reply = agent.Chat("你好");
 | Android SDK | ✅ Verified | Real ARM64 device: Rust→DeepSeek→conversation, 5MB .so |
 | Windows SDK | ✅ Verified | C# P/Invoke: agent_bindings.dll → DeepSeek, full conversation OK |
 | iOS SDK | 🚧 Next | Swift bindings generated, need XCFramework packaging |
-| Web SDK | 🚧 Next | WASM compilation pending toolchain setup |
+| Web SDK | ✅ Verified | agent-wasm crate, web_sys::fetch, 587KB .wasm, HTML demo |
 | CI/CD | ✅ Ready | GitHub Actions: test-linux/windows/macos + cross-android + cross-wasm |
-| Tests | ✅ 31 passing | Unit + integration + Hermes compatibility + doc-tests |
+| Tests | ✅ 33 passing | Unit + integration + Hermes compatibility + doc-tests |
 | crates.io | ❌ TODO | Publish agent-core for Rust ecosystem |
 
 ---
