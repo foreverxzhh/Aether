@@ -408,10 +408,10 @@
 |---|------|------|------|
 | 🔴 R05 | **Android SDK (Kotlin)** | ✅ 已完成。UniFFI 绑定 + Aether.kt 包装 + Gradle 项目 + build-android.sh | 1-2 周 |
 | 🟡 R10 | **Windows SDK (C#)** | ✅ 已完成。C API 导出 + C# P/Invoke 包装 + NuGet 项目 + build-windows.ps1 | 1-2 周 |
-| ⚪ R07 | **iOS SDK (Swift)** | ⏳ 后续做。依赖 Android 经验后再做 | 1-2 周 |
-| ⚪ R06 | **Web SDK (WASM)** | ⏳ 后续做。需要 WASM 编译环境搭建 | 1 周 |
-| R08 | **更多 Hermes 兼容性测试** | 目前只有 skills 格式验证。需增加：会话 SQLite schema 兼容、消息格式兼容、技能自动生成结果对比 | 3-5 天 |
-| R09 | **基础文档 / API 参考** | ✅ 已完成。README中英双语、getting-started指南、rustdoc API文档 | 2-3 天 |
+| ✅ R07 | **iOS SDK (Swift)** | ✅ 已完成。build-ios.sh + Swift bindings + XCFramework配置 | 1-2 周 |
+| ✅ R06 | **Web SDK (WASM)** | ✅ 已完成。agent-wasm crate + web_sys::fetch + TS SDK + HTML Demo, 587KB | 1 周 |
+| ✅ R08 | **更多 Hermes 兼容性测试** | ✅ 已完成。+3测试: schema兼容/消息序列化/错误格式 | 3-5 天 |
+| ✅ R09 | **基础文档 / API 参考** | ✅ 已完成。README中英双语、getting-started指南、rustdoc API文档 | 2-3 天 |
 
 ### 🟢 P2 — 增强（锦上添花）
 
@@ -443,7 +443,7 @@
 |--------|------|--------|
 | 🔴 P0 | 4 项 | ✅ 已完成 |
 | 🟡 R05-R10 | Android + Windows SDK | ✅ 已完成 |
-| ⚪ 后续 | R06 Web SDK, R07 iOS SDK | ⏳ WASM 环境就绪后 |
+| ✅ R06-R09 | Web/iOS SDK + 兼容测试 + 文档 | ✅ 全部完成 |
 | 🟢 P2 | 7 项 | ~4-6 周 |
 | ⚪ P3 | 5 项 | ~2-3 周 |
 | **合计** | **21 项** | **~10-15 周** |

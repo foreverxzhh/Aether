@@ -217,3 +217,21 @@ R04 MCP 工具注册框架: API入口就绪
 10. Release 优化: LTO+strip+codegen-units=1
 
 测试: 31/31 通过（新增3个安全测试）
+
+## 2026-06-14 — R06+R07+R08+R09 全部完成
+
+R06 Web SDK: agent-wasm crate, web_sys::fetch, 587KB .wasm, TS SDK + HTML Demo
+R07 iOS SDK: build-ios.sh, Swift Package 配置, XCFramework
+R08 Hermes兼容: +3测试 (schema/roundtrip/error-format), 8→11
+R09 文档: README/中文同步, getting-started 更新
+
+最终: 33测试, 三平台验证 ✅, 安全Review ✅, CI ✅
+
+## 2026-06-14 — R06+R07+R08+R09 全部完成
+
+R06 Web SDK: agent-wasm crate, web_sys::fetch, 587KB .wasm, TS SDK + HTML Demo
+R07 iOS SDK: build-ios.sh, Swift Package 配置, XCFramework
+R08 Hermes兼容: +3测试 (schema/roundtrip/error-format), 8→11
+R09 文档: README/中文同步, getting-started 更新
+
+最终: 33测试, 三平台验证 ✅, 安全Review ✅, CI ✅
