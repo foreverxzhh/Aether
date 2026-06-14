@@ -40,11 +40,11 @@ jobs:
       - name: 安装 Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: 编译
-        run: cargo build --workspace --verbose
+      - name: 编译 (exclude WASM-only crate)
+        run: cargo build -p agent-core -p agent-bindings --verbose
 
       - name: 运行测试
-        run: cargo test --workspace --verbose
+        run: cargo test -p agent-core -p agent-bindings --verbose
 
   # ── 测试：Windows ──
   test-windows:
@@ -56,11 +56,11 @@ jobs:
       - name: 安装 Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: 编译
-        run: cargo build --workspace --verbose
+      - name: 编译 (exclude WASM-only crate)
+        run: cargo build -p agent-core -p agent-bindings --verbose
 
       - name: 运行测试
-        run: cargo test --workspace --verbose
+        run: cargo test -p agent-core -p agent-bindings --verbose
 
   # ── 测试：macOS ──
   test-macos:
@@ -72,11 +72,11 @@ jobs:
       - name: 安装 Rust
         uses: dtolnay/rust-toolchain@stable
 
-      - name: 编译
-        run: cargo build --workspace --verbose
+      - name: 编译 (exclude WASM-only crate)
+        run: cargo build -p agent-core -p agent-bindings --verbose
 
       - name: 运行测试
-        run: cargo test --workspace --verbose
+        run: cargo test -p agent-core -p agent-bindings --verbose
 
   # ── 交叉编译：Android ARM64 ──
   cross-android:
