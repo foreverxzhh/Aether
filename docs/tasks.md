@@ -17,8 +17,8 @@
 | Phase 5: 记忆与技能 | ✅ 完成 | 2026-06-14 | SQLite+FTS5 + MEMORY.md + agentskills.io |
 | Phase 6: 学习闭环 | ✅ 完成 | 2026-06-14 | 压缩/缓存/Review/Curator 框架 |
 | Phase 7: MCP 与委托 | ✅ 完成 | 2026-06-14 | MCP Client + Delegate 框架 |
-| Phase 8: 跨平台绑定 | ✅ 完成 | 2026-06-14 | WASM + UniFFI 入口 |
-| Phase 9: 收尾优化 | ✅ 完成 | 2026-06-14 | 18 测试通过，0 error |
+| Phase 8: 跨平台绑定 | ✅ 完成 | 2026-06-14 | WASM + UniFFI 入口 + Kotlin/C#/Swift 绑定 |
+| Phase 9: 收尾优化 | ✅ 完成 | 2026-06-14 | 29 测试通过，0 error |
 
 ---
 

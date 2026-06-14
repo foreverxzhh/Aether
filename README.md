@@ -5,6 +5,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 ![Status](https://img.shields.io/badge/status-alpha-orange)
+[![Tests](https://img.shields.io/badge/tests-29%20passing-brightgreen)]()
 
 ---
 
@@ -29,7 +30,8 @@
 | Context Compression | ✅ Done | LLM summarization + session splitting |
 | Profile System | ✅ Done | Multi-instance isolation |
 | Delegate (Sub-agent) | ✅ Done | Isolated child agents |
-| Platform Bindings | 🚧 Planned | Android (Kotlin), iOS (Swift), Web (WASM), Windows (C#) |
+| Platform Bindings | ✅ SDK Ready | Android (Kotlin UniFFI), Windows (C# P/Invoke), macOS/iOS (Swift) |
+| Android Demo | 🚧 Building | Full Android app with Aether SDK (see examples/android-demo) |
 
 ### Quick Start (CLI)
 
@@ -140,7 +142,8 @@ Kotlin SDK   Swift SDK   TypeScript SDK    C# SDK
 | 上下文压缩 | ✅ 完成 | LLM 摘要 + 会话拆分 |
 | Profile 多实例 | ✅ 完成 | 完全隔离的配置/记忆/技能 |
 | 子 Agent 委托 | ✅ 完成 | 隔离的子任务执行 |
-| 平台绑定 | 🚧 计划中 | Android / iOS / Web / Windows |
+| 平台绑定 | ✅ SDK 就绪 | Android (Kotlin UniFFI)、Windows (C#)、macOS/iOS (Swift) |
+| Android Demo | 🚧 构建中 | 完整 Android 示例 App（见 examples/android-demo） |
 
 ### 快速开始（CLI）
 
