@@ -31,6 +31,10 @@ struct Cli {
     /// 用户输入
     #[arg(short = 'c', long)]
     prompt: String,
+
+    /// 流式输出
+    #[arg(short = 't', long)]
+    stream: bool,
 }
 
 #[tokio::main]
@@ -39,7 +43,7 @@ async fn main() {
 
     let cli = Cli::parse();
 
-    // 从环境变量获取 API Key（如果命令行没有提供）
+    // 从环境变量获取 API Key
     let api_key = cli.api_key.or_else(|| {
         let var = format!("{}_API_KEY", cli.provider.to_uppercase());
         std::env::var(&var).ok()
@@ -63,23 +67,41 @@ async fn main() {
     let mut agent = agent_core::AIAgent::new(config);
 
     // 初始化模型
-    println!("🚀 初始化 {} / {} ...", cli.provider, cli.model);
+    eprintln!("🚀 初始化 {} / {} ...", cli.provider, cli.model);
     if let Err(e) = agent.init_model().await {
         eprintln!("❌ 初始化失败: {}", e);
         std::process::exit(1);
     }
-    println!("   ✓ 就绪\n");
+    eprintln!("   ✓ 就绪\n");
 
-    // 运行对话
-    println!("🧑 用户: {}", cli.prompt);
-    println!("🤖 思考中...\n");
+    // 用户输入
+    eprintln!("🧑 用户: {}", cli.prompt);
+    eprintln!("🤖 Aether:\n");
 
-    match agent.chat(&cli.prompt).await {
-        Ok(response) => {
-            println!("🤖 Aether:\n{}\n", response);
+    // 运行对话（流式或非流式）
+    if cli.stream {
+        match agent.chat_stream(&cli.prompt, |chunk| {
+            print!("{}", chunk.delta);
+            use std::io::Write;
+            std::io::stdout().flush().ok();
+        }).await {
+            Ok(full) => {
+                println!("\n");
+                let words = full.split_whitespace().count();
+                eprintln!("  (共 {} 字, {} 词)", full.chars().count(), words);
+            }
+            Err(e) => {
+                eprintln!("\n❌ 错误: {}", e);
+            }
         }
-        Err(e) => {
-            eprintln!("❌ 错误: {}", e);
+    } else {
+        match agent.chat(&cli.prompt).await {
+            Ok(response) => {
+                println!("{}\n", response);
+            }
+            Err(e) => {
+                eprintln!("❌ 错误: {}", e);
+            }
         }
     }
 }

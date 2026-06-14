@@ -11,33 +11,36 @@ pub fn create_chat_model(config: &AgentConfig) -> Result<Box<dyn ChatModel>, Aet
         .or_else(|| std::env::var(format!("{}_API_KEY", config.provider.to_uppercase())).ok())
         .unwrap_or_default();
 
+    // 确定 base_url
+    let base_url = config.base_url.as_deref().or_else(|| {
+        match config.provider.to_lowercase().as_str() {
+            "openai" => Some("https://api.openai.com/v1"),
+            "deepseek" => Some("https://api.deepseek.com/v1"),
+            "ollama" => Some("http://localhost:11434/v1"),
+            _ => None,
+        }
+    });
+
     match config.provider.to_lowercase().as_str() {
-        "openai" => Ok(Box::new(OpenAIProvider::new(
-            &api_key,
-            &config.model,
-            config.base_url.as_deref(),
-        ))),
+        "openai" | "deepseek" | "custom" => {
+            let url = base_url.ok_or_else(|| {
+                AetherError::ConfigError(format!(
+                    "供应商 {} 需要指定 base_url", config.provider
+                ))
+            })?;
+            Ok(Box::new(OpenAIProvider::new(&api_key, &config.model, Some(url))))
+        }
         "anthropic" => Err(AetherError::ConfigError(
             "Anthropic 供应商尚未实现".to_string(),
         )),
-        "ollama" => Err(AetherError::ConfigError(
-            "Ollama 供应商尚未实现".to_string(),
-        )),
-        provider => {
-            // 尝试作为 OpenAI 兼容供应商（base_url 必须提供）
-            if config.base_url.is_some() {
-                Ok(Box::new(OpenAIProvider::new(
-                    &api_key,
-                    &config.model,
-                    config.base_url.as_deref(),
-                )))
-            } else {
-                Err(AetherError::ConfigError(format!(
-                    "不支持的供应商: {}。当前支持: openai（或通过 base_url 配置兼容供应商）",
-                    provider
-                )))
-            }
+        "ollama" => {
+            let url = base_url.unwrap_or("http://localhost:11434/v1");
+            Ok(Box::new(OpenAIProvider::new(&api_key, &config.model, Some(url))))
         }
+        provider => Err(AetherError::ConfigError(format!(
+            "不支持的供应商: {}。当前支持: openai / deepseek / ollama（或通过 -b 指定 base_url 使用兼容 API）",
+            provider
+        ))),
     }
 }
 

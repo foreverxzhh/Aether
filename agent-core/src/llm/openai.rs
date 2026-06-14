@@ -6,7 +6,7 @@ use serde_json::Value;
 use crate::error::AetherError;
 use crate::llm::{ChatModel, Streamable};
 use crate::types::message::{Content, Message, MessageRole};
-use crate::types::model::{FinishReason, ModelResponse, TokenUsage};
+use crate::types::model::{FinishReason, ModelResponse, StreamChunk, TokenUsage};
 
 /// OpenAI Chat Completions 供应商
 pub struct OpenAIProvider {
@@ -229,12 +229,155 @@ impl ChatModel for OpenAIProvider {
 
     async fn stream(
         &self,
-        _messages: &[Message],
-        _tools: &[Value],
+        messages: &[Message],
+        tools: &[Value],
     ) -> Result<Box<dyn Streamable>, AetherError> {
-        // TODO: T029 流式响应实现
-        Err(AetherError::UnsupportedApiMode("streaming not yet implemented".to_string()))
+        let body = self.build_request(messages, tools, true);
+        let url = self.chat_url();
+
+        let response = self
+            .client
+            .post(&url)
+            .header("Authorization", format!("Bearer {}", self.api_key))
+            .header("Content-Type", "application/json")
+            .header("Accept", "text/event-stream")
+            .json(&body)
+            .send()
+            .await
+            .map_err(|e| AetherError::LlmError(format!("流式请求失败: {}", e)))?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let text = response.text().await.unwrap_or_default();
+            return Err(AetherError::LlmError(format!(
+                "流式 API 错误 ({}): {}",
+                status.as_u16(),
+                &text[..text.len().min(200)]
+            )));
+        }
+
+        Ok(Box::new(OpenAIStream {
+            response,
+            buffer: String::new(),
+            done: false,
+        }))
     }
+}
+
+// ── 流式响应实现 ──
+
+/// OpenAI SSE 流式响应
+pub struct OpenAIStream {
+    response: reqwest::Response,
+    buffer: String,
+    done: bool,
+}
+
+#[async_trait]
+impl Streamable for OpenAIStream {
+    async fn next_chunk(&mut self) -> Result<Option<StreamChunk>, AetherError> {
+        if self.done {
+            return Ok(None);
+        }
+
+        // 先尝试从已有 buffer 中解析
+        if let Some(chunk) = self.parse_buffer() {
+            return Ok(chunk);
+        }
+
+        // 从网络读取更多数据
+        while let Some(bytes) = self.response.chunk().await.map_err(|e| {
+            AetherError::LlmError(format!("流式读取失败: {}", e))
+        })? {
+            self.buffer.push_str(&String::from_utf8_lossy(&bytes));
+
+            if let Some(chunk) = self.parse_buffer() {
+                return Ok(chunk);
+            }
+        }
+
+        // 流结束
+        self.done = true;
+        Ok(self.parse_buffer().flatten())
+    }
+}
+
+impl OpenAIStream {
+    /// 从 buffer 中解析 SSE 行，返回第一个有效的 StreamChunk
+    fn parse_buffer(&mut self) -> Option<Option<StreamChunk>> {
+        if self.buffer.is_empty() {
+            return None;
+        }
+
+        loop {
+            let end = self.buffer.find('\n')?;
+            let line = self.buffer[..end].trim().to_string();
+            self.buffer = self.buffer[end + 1..].to_string();
+
+            if line.is_empty() {
+                continue;
+            }
+            if line.starts_with("event:") || line.starts_with(':') {
+                continue;
+            }
+
+            let data = line.strip_prefix("data: ")?.trim().to_string();
+
+            if data == "[DONE]" {
+                self.done = true;
+                return Some(None);
+            }
+
+            if let Ok(chunk) = self.parse_chunk(&data) {
+                return Some(Some(chunk));
+            }
+        }
+    }
+
+    fn parse_chunk(&self, data: &str) -> Result<StreamChunk, ()> {
+        let sse: OpenAIStreamChunk = serde_json::from_str(data).map_err(|_| ())?;
+        let choice = sse.choices.into_iter().next().ok_or(())?;
+
+        let delta = choice.delta.content.unwrap_or_default();
+        let finish_reason = choice.finish_reason.and_then(|f| match f.as_str() {
+            "stop" => Some(FinishReason::Stop),
+            "length" => Some(FinishReason::Length),
+            "tool_calls" => Some(FinishReason::ToolCalls),
+            other => Some(FinishReason::Other(other.to_string())),
+        });
+
+        Ok(StreamChunk {
+            delta,
+            tool_calls: None,
+            finish_reason,
+            usage: None,
+        })
+    }
+}
+
+/// SSE streaming chunk 格式
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct OpenAIStreamChunk {
+    choices: Vec<StreamChoice>,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct StreamChoice {
+    delta: StreamDelta,
+    #[serde(rename = "finish_reason")]
+    finish_reason: Option<String>,
+    index: Option<u32>,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct StreamDelta {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    content: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    role: Option<String>,
 }
 
 // ── OpenAI API 响应格式 ──

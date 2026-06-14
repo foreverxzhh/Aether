@@ -3,11 +3,11 @@ use tokio::sync::RwLock;
 
 use crate::config::AgentConfig;
 use crate::error::AetherError;
-use crate::llm::ChatModel;
+use crate::llm::{ChatModel, Streamable};
 use crate::llm::provider::create_chat_model;
 use crate::loop_mod;
 use crate::tools::ToolRegistry;
-use crate::types::model::TurnResult;
+use crate::types::model::{StreamChunk, TurnResult};
 
 /// AIAgent — 核心 Agent 类
 pub struct AIAgent {
@@ -85,5 +85,34 @@ impl AIAgent {
             .as_ref()
             .map(|m| m.provider_name())
             .unwrap_or("unknown")
+    }
+
+    /// 流式对话（逐 chunk 回调）
+    pub async fn chat_stream<F: FnMut(StreamChunk)>(
+        &self,
+        message: &str,
+        mut callback: F,
+    ) -> Result<String, AetherError> {
+        let model = self.model.as_ref().ok_or_else(|| {
+            AetherError::ConfigError("模型未初始化".to_string())
+        })?;
+
+        let system_msg = crate::prompt::PromptBuilder::build_system_message(
+            self.config.system_prompt.as_deref(),
+            None,
+            None,
+        );
+        let user_msg = crate::types::message::Message::user(message);
+        let messages = vec![system_msg, user_msg];
+
+        let mut stream = model.stream(&messages, &[]).await?;
+        let mut full_response = String::new();
+
+        while let Some(chunk) = stream.next_chunk().await? {
+            full_response.push_str(&chunk.delta);
+            callback(chunk);
+        }
+
+        Ok(full_response)
     }
 }
