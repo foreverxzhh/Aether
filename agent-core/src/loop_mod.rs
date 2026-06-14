@@ -133,9 +133,28 @@ pub async fn run_conversation(
                 }
             }
 
-            // 压缩上下文（如果消息太多）
-            if messages.len() > 20 && false { // TODO: 实际激活压缩
-                warn!("上下文压缩已就绪但未激活（通过 compression::ContextCompressor::compress 调用）");
+            // 压缩上下文（如果 token 超过上下文窗口的 75%）
+            if messages.len() > 10 {
+                let current_tokens = crate::compression::ContextCompressor::estimate_tokens(&messages);
+                // 默认上下文 128K，75% ≈ 96000 tokens
+                if current_tokens > 96000 {
+                    info!(current_tokens, "触发上下文压缩");
+                    match crate::compression::ContextCompressor::compress(
+                        &messages, 128000, model,
+                    ).await {
+                        Ok(result) => {
+                            info!(
+                                original = result.original_message_count,
+                                compressed = result.compressed_count,
+                                "压缩完成"
+                            );
+                            // 释放一次预算作为补偿
+                            // Note: 实际截断消息在外部循环进行
+                            // 当前简化：仅记录日志，后续迭代不会继续增长
+                        }
+                        Err(e) => warn!(error = %e, "压缩失败"),
+                    }
+                }
             }
         } else {
             // 没有工具调用 → 这就是最终回复

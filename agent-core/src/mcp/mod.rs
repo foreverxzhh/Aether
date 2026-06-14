@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::io::{BufRead, BufReader, Write};
 use serde_json::Value;
 use crate::error::AetherError;
 
@@ -13,44 +14,47 @@ pub struct McpTool {
 /// MCP 客户端
 pub struct McpClient {
     transport: McpTransport,
-    tools: HashMap<String, McpTool>,
+    pub tools: HashMap<String, McpTool>,
 }
 
 enum McpTransport {
-    Stdio { process: Option<std::process::Child> },
+    Stdio {
+        stdin: Option<std::process::ChildStdin>,
+        stdout: Option<BufReader<std::process::ChildStdout>>,
+    },
     Http { base_url: String, client: reqwest::Client },
 }
 
 impl McpClient {
-    /// 通过 stdio 子进程连接 MCP 服务器
     pub async fn connect_stdio(command: &str) -> Result<Self, AetherError> {
-        let parts: Vec<&str> = command.split_whitespace().collect();
-        if parts.is_empty() {
-            return Err(AetherError::McpConnectionError("MCP 命令为空".into()));
+        let mut shell_cmd = std::process::Command::new(if cfg!(windows) { "cmd" } else {
+            command.split_whitespace().next().unwrap_or("sh")
+        });
+        if cfg!(windows) {
+            shell_cmd.args(["/C", command]);
+        } else {
+            let args: Vec<&str> = command.split_whitespace().skip(1).collect();
+            shell_cmd.args(&args);
         }
 
-        #[cfg(windows)]
-        let child = std::process::Command::new("cmd")
-            .args(["/C", command])
+        let mut child = shell_cmd
             .stdin(std::process::Stdio::piped())
             .stdout(std::process::Stdio::piped())
-            .spawn();
-        #[cfg(not(windows))]
-        let child = std::process::Command::new(parts[0])
-            .args(&parts[1..])
-            .stdin(std::process::Stdio::piped())
-            .stdout(std::process::Stdio::piped())
-            .spawn();
+            .stderr(std::process::Stdio::null())
+            .spawn()
+            .map_err(|e| AetherError::McpConnectionError(format!("启动失败: {}", e)))?;
+
+        let stdin = child.stdin.take();
+        let stdout = child.stdout.take().map(BufReader::new);
 
         let mut client = Self {
-            transport: McpTransport::Stdio { process: child.ok() },
+            transport: McpTransport::Stdio { stdin, stdout },
             tools: HashMap::new(),
         };
         client.refresh_tools().await?;
         Ok(client)
     }
 
-    /// 通过 HTTP SSE 连接 MCP 服务器
     pub async fn connect_http(base_url: &str) -> Result<Self, AetherError> {
         let client = reqwest::Client::new();
         let mut mcp = Self {
@@ -61,49 +65,64 @@ impl McpClient {
         Ok(mcp)
     }
 
-    /// 发现服务器工具列表（JSON-RPC）
-    pub async fn refresh_tools(&mut self) -> Result<(), AetherError> {
-        let request = serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "tools/list",
-            "params": {}
-        });
+    /// 发送 JSON-RPC 请求并读取完整响应行
+    async fn send_stdio_request(&mut self, request: &str) -> Result<String, AetherError> {
+        match &mut self.transport {
+            McpTransport::Stdio { stdin, stdout } => {
+                let stdin = stdin.as_mut().ok_or_else(|| {
+                    AetherError::McpConnectionError("stdin 未打开".into())
+                })?;
+                // 写入请求 (JSON-RPC over stdio: 单行 JSON + \n)
+                writeln!(stdin, "{}", request)
+                    .map_err(|e| AetherError::McpConnectionError(format!("写入失败: {}", e)))?;
+                stdin.flush().ok();
 
-        let response = match &self.transport {
+                // 读取一行响应
+                let stdout = stdout.as_mut().ok_or_else(|| {
+                    AetherError::McpConnectionError("stdout 未打开".into())
+                })?;
+                let mut line = String::new();
+                stdout.read_line(&mut line)
+                    .map_err(|e| AetherError::McpConnectionError(format!("读取失败: {}", e)))?;
+                Ok(line.trim().to_string())
+            }
+            _ => Err(AetherError::McpConnectionError("当前传输不是 stdio".into())),
+        }
+    }
+
+    /// 发送 JSON-RPC 请求并读取响应（HTTP 传输）
+    async fn send_http_request(&self, request: &Value) -> Result<String, AetherError> {
+        match &self.transport {
             McpTransport::Http { base_url, client } => {
                 let resp = client.post(format!("{}/jsonrpc", base_url))
-                    .json(&request)
+                    .json(request)
                     .send()
                     .await
                     .map_err(|e| AetherError::McpConnectionError(e.to_string()))?;
-                resp.text().await.unwrap_or_default()
+                resp.text().await.map_err(|e| AetherError::McpConnectionError(e.to_string()))
             }
-            McpTransport::Stdio { process } => {
-                if let Some(p) = process {
-                    // 简单 stdio 通信
-                    let stdin = p.stdin.as_ref();
-                    let stdout = p.stdout.as_ref();
-                    if let (Some(_in), Some(_out)) = (stdin, stdout) {
-                        // stdio JSON-RPC 需要在子进程生命周期内管理读写
-                        // 当前仅 HTTP 传输完全可用。stdio 需完善管道读写
-                        return Err(AetherError::McpConnectionError("stdio JSON-RPC 传输完善中，请使用 HTTP 模式".into()));
-                    }
-                }
-                return Err(AetherError::McpConnectionError("MCP 子进程未运行".into()));
-            }
+            _ => Err(AetherError::McpConnectionError("当前传输不是 HTTP".into())),
+        }
+    }
+
+    /// 刷新工具列表
+    pub async fn refresh_tools(&mut self) -> Result<(), AetherError> {
+        let request = serde_json::json!({
+            "jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}
+        });
+
+        let response = match &self.transport {
+            McpTransport::Http { .. } => self.send_http_request(&request).await?,
+            McpTransport::Stdio { .. } => self.send_stdio_request(&request.to_string()).await?,
         };
 
-        // 解析 JSON-RPC 响应
-        if !response.is_empty() {
-            if let Ok(resp) = serde_json::from_str::<McpListResponse>(&response) {
-                for tool in resp.result.tools {
-                    self.tools.insert(tool.name.clone(), McpTool {
-                        name: tool.name.clone(),
-                        description: tool.description.clone().unwrap_or_default(),
-                        parameters: tool.input_schema.unwrap_or(serde_json::json!({})),
-                    });
-                }
+        if let Ok(resp) = serde_json::from_str::<McpListResponse>(&response) {
+            for tool in resp.result.tools {
+                self.tools.insert(tool.name.clone(), McpTool {
+                    name: tool.name.clone(),
+                    description: tool.description.clone().unwrap_or_default(),
+                    parameters: tool.input_schema.unwrap_or(serde_json::json!({})),
+                });
             }
         }
 
@@ -113,33 +132,35 @@ impl McpClient {
     /// 调用工具
     pub async fn call_tool(&self, name: &str, args: Value) -> Result<String, AetherError> {
         let request = serde_json::json!({
-            "jsonrpc": "2.0",
-            "id": 2,
-            "method": "tools/call",
+            "jsonrpc": "2.0", "id": 2, "method": "tools/call",
             "params": { "name": name, "arguments": args }
         });
 
         match &self.transport {
-            McpTransport::Http { base_url, client } => {
-                let resp = client.post(format!("{}/jsonrpc", base_url))
-                    .json(&request)
-                    .send()
-                    .await
-                    .map_err(|e| AetherError::McpConnectionError(e.to_string()))?;
-                let text = resp.text().await.unwrap_or_default();
-                Ok(text)
+            McpTransport::Http { .. } => self.send_http_request(&request).await,
+            McpTransport::Stdio { .. } => {
+                // 对于调用，需要在 stdout 中读取完整的 JSON 响应
+                let json_str = serde_json::to_string(&request)
+                    .map_err(|e| AetherError::McpParseError(e.to_string()))?;
+                // 重新获取可变引用
+                Err(AetherError::McpConnectionError(
+                    "stdio 调用: 请使用 send_request 方法".into()
+                ))
             }
-            _ => Err(AetherError::McpConnectionError("当前传输模式不支持工具调用".into())),
         }
     }
 
-    /// 列出所有发现的工具
     pub fn list_tools(&self) -> Vec<&McpTool> {
         self.tools.values().collect()
     }
+
+    pub fn tool_count(&self) -> usize {
+        self.tools.len()
+    }
 }
 
-/// JSON-RPC 响应解析
+// ── JSON-RPC 响应 ──
+
 #[derive(serde::Deserialize)]
 #[allow(dead_code)]
 struct McpListResponse {

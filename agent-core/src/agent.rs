@@ -33,12 +33,7 @@ impl AIAgent {
         registry.register(SkillsList);
         registry.register(SkillView);
         registry.register(SkillManage);
-
-        Self {
-            config,
-            model: None,
-            tools: Arc::new(RwLock::new(registry)),
-        }
+        Self { config, model: None, tools: Arc::new(RwLock::new(registry)) }
     }
 
     pub fn model(&self) -> Option<&dyn ChatModel> {
@@ -52,9 +47,7 @@ impl AIAgent {
     }
 
     pub fn get_tool_definitions(&self) -> Vec<serde_json::Value> {
-        self.tools.try_read()
-            .map(|r| r.get_definitions())
-            .unwrap_or_default()
+        self.tools.try_read().map(|r| r.get_definitions()).unwrap_or_default()
     }
 
     pub async fn execute_tool(&self, name: &str, args: serde_json::Value) -> Result<String, AetherError> {
@@ -71,7 +64,24 @@ impl AIAgent {
         if self.model.is_none() {
             return Err(AetherError::ConfigError("模型未初始化。请先调用 init_model()".into()));
         }
-        loop_mod::run_conversation(self, user_message).await
+        let result = loop_mod::run_conversation(self, user_message).await?;
+
+        // 后台触发学习闭环（独立创建 review Agent，避免借用 &self 的生命周期问题）
+        let config = self.config.clone();
+        let messages = result.messages.clone();
+        let tool_count = result.tool_results.len();
+        tokio::spawn(async move {
+            if let Ok(mut review_agent) = create_chat_model(&config) {
+                let hermes_home = crate::memory::core::default_hermes_home();
+                if let Err(e) = crate::memory::review::review_and_learn(
+                    &messages, tool_count, &hermes_home, review_agent.as_ref(),
+                ).await {
+                    tracing::warn!(error = %e, "Background Review 失败");
+                }
+            }
+        });
+
+        Ok(result)
     }
 
     pub fn provider_name(&self) -> &str {
@@ -79,21 +89,17 @@ impl AIAgent {
     }
 
     pub async fn chat_stream<F: FnMut(StreamChunk)>(
-        &self,
-        message: &str,
-        mut callback: F,
+        &self, message: &str, mut callback: F,
     ) -> Result<String, AetherError> {
         let model = self.model.as_ref().ok_or_else(|| {
             AetherError::ConfigError("模型未初始化".into())
         })?;
-
         let system_msg = crate::prompt::PromptBuilder::build_system_message(
             self.config.system_prompt.as_deref(), None, None,
         );
         let user_msg = crate::types::message::Message::user(message);
         let messages = vec![system_msg, user_msg];
         let tools = self.get_tool_definitions();
-
         let mut stream = model.stream(&messages, &tools).await?;
         let mut full_response = String::new();
         while let Some(chunk) = stream.next_chunk().await? {
