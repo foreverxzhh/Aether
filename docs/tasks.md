@@ -397,10 +397,10 @@
 
 | # | 任务 | 说明 | 预估 |
 |---|------|------|------|
-| R01 | **上下文压缩接入 Agent 循环** | compression::ContextCompressor 已实现，但 loop_mod.rs 中未实际调用。需在消息数 > 20 或 token 超限时触发压缩→会话拆分→budget退还 | 1 天 |
-| R02 | **Background Review 接入 Agent 循环** | review::review_and_learn 已实现，但 AIAgent.run_conversation 结束后未自动调用。需在每轮对话完成后 spawn 异步任务执行审查 | 1 天 |
-| R03 | **MCP stdio 传输完善** | HTTP/SSE 传输没问题，stdio transport 需要完整的子进程生命周期管理（stdin 写入 JSON-RPC 请求 → stdout 读取响应） | 2-3 天 |
-| R04 | **MCP 服务器工具自动注册到 ToolRegistry** | 当 MCP 服务器连接后，其 tool list 应自动注册到 Agent 的 ToolRegistry 中，使得 LLM 可以调用 MCP 工具 | 2-3 天 |
+| R01 | **上下文压缩接入 Agent 循环** | ✅ 已完成。消息 > 10条且 token > 96K 时自动触发 ContextCompressor::compress | 1 天 |
+| R02 | **Background Review 接入 Agent 循环** | ✅ 已完成。run_conversation 结束后 spawn 异步任务执行 review_and_learn | 1 天 |
+| R03 | **MCP stdio 传输完善** | ✅ 已完成。子进程 stdin/stdout JSON-RPC 读写，支持 Windows(posix) | 2-3 天 |
+| R04 | **MCP 工具自动注册到 ToolRegistry** | ✅ API 入口就绪（完全激活需 ToolRegistry 支持外部注册） | 2-3 天 |
 
 ### 🟡 P1 — 重要（提升可用性）
 

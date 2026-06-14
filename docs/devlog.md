@@ -160,3 +160,10 @@
 - Curator (技能生命周期+状态持久化+归档)
 - MCP Client (stdio+HTTP+JSON-RPC)
 - Delegate (子Agent隔离+批量并行)
+
+## 2026-06-14 — P0 后续任务完成
+
+R01 上下文压缩接入 Agent 循环: messages量>10条+token>96K时自动触发压缩
+R02 Background Review 接入: run_conversation结束后spawn异步review Agent
+R03 MCP stdio 传输完善: 完整子进程JSON-RPC(win/posix)
+R04 MCP 工具注册框架: API入口就绪
