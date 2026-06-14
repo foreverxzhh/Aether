@@ -12,7 +12,7 @@
 |-------|------|---------|------|
 | Phase 1: 项目初始化 | ✅ 完成 | 2026-06-14 | workspace 编译通过 |
 | Phase 2: 基础设施 | ✅ 完成 | 2026-06-14 | 36 个文件，4244 行代码，7 个测试通过 |
-| Phase 3: Agent 引擎 | 🚧 待开始 | — | T019-T036 共 18 个任务 |
+| Phase 3: Agent 引擎 | 🚧 进行中 | 2026-06-14 | T019/T022/T023/T024/T025/T027/T028/T032/T034 已完成 |
 | Phase 4: 工具系统 | ⏳ 等待 | — | 依赖 Phase 3 |
 | Phase 5: 记忆与技能 | ⏳ 等待 | — | 依赖 Phase 3 |
 | Phase 6: 学习闭环 | ⏳ 等待 | — | 依赖 Phase 3+5 |
@@ -96,26 +96,26 @@
 
 ### LLM 供应商
 
-- [ ] T019 [P] [US1] 实现 OpenAI Chat Completions 供应商在 `agent-core/src/llm/openai.rs`
+- [x] T019 [P] [US1] 实现 OpenAI Chat Completions 供应商在 `agent-core/src/llm/openai.rs`
 - [ ] T020 [P] [US1] 实现 Anthropic Messages 供应商在 `agent-core/src/llm/anthropic.rs`
 - [ ] T021 [P] [US1] 实现 Ollama 供应商（OpenAI 兼容协议）在 `agent-core/src/llm/ollama.rs`
-- [ ] T022 [US1] 实现通用 OpenAI 兼容适配器在 `agent-core/src/llm/provider.rs`
+- [x] T022 [US1] 实现通用 OpenAI 兼容适配器在 `agent-core/src/llm/provider.rs`（同时作为 fallback）
 
 ### Agent 循环
 
-- [ ] T023 [P] [US1] 构建多层系统提示词组装器在 `agent-core/src/prompt.rs`
-- [ ] T024 [US1] 实现 AIAgent 结构（Builder 模式）在 `agent-core/src/agent.rs`
-- [ ] T025 [US1] 实现 `run_conversation()` ReAct 循环在 `agent-core/src/loop.rs`
+- [x] T023 [P] [US1] 构建多层系统提示词组装器在 `agent-core/src/prompt.rs`
+- [x] T024 [US1] 实现 AIAgent 结构（Builder 模式）在 `agent-core/src/agent.rs`
+- [x] T025 [US1] 实现 `run_conversation()` ReAct 循环在 `agent-core/src/loop_mod.rs`
 - [ ] T026 [P] [US1] 实现 3 种 API 模式分发（chat_completions/anthropic_messages/codex_responses）在 `agent-core/src/loop.rs`
-- [ ] T027 [P] [US1] 实现迭代预算控制（AtomicUsize，退还逻辑）在 `agent-core/src/budget.rs`
-- [ ] T028 [P] [US1] 实现熔断器（工具签名哈希 + 连续检测）在 `agent-core/src/breaker.rs`
+- [x] T027 [P] [US1] 实现迭代预算控制（AtomicU32，退还逻辑）在 `agent-core/src/budget.rs`
+- [x] T028 [P] [US1] 实现熔断器（CircuitBreaker，签名哈希+连续检测）在 `agent-core/src/breaker.rs`
 - [ ] T029 [US1] 实现流式响应（SSE 解析 + 可中断）在 `agent-core/src/loop.rs`
 
 ### 错误恢复
 
 - [ ] T030 [P] [US1] 实现错误分类（空响应、截断、无效工具、供应商错误）在 `agent-core/src/error.rs`
 - [ ] T031 [US1] 实现带抖动的退避重试逻辑在 `agent-core/src/loop.rs`
-- [ ] T032 [US1] 实现迭代预算耗尽优雅处理在 `agent-core/src/loop.rs`
+- [x] T032 [US1] 实现迭代预算耗尽优雅处理在 `agent-core/src/loop_mod.rs`（budget 耗尽时发送总结消息）
 
 ### 上下文引擎
 
@@ -123,7 +123,7 @@
 
 ### CLI 演示
 
-- [ ] T034 [US1] 构建最小 CLI 入口在 `agent-bindings/src/bin/cli.rs`（从参数读取 prompt，调用 agent，输出结果）
+- [x] T034 [US1] 构建完整 CLI 入口在 `agent-bindings/src/bin/cli.rs`（支持 -p/-m/-k/-b/-s/-c，自动从环境变量读取 API Key）
 - [ ] T035 [US1] 构建流式 CLI 演示在 `agent-bindings/src/bin/cli.rs`（stdin/stdout，实时输出 token）
 
 ### Hermes 兼容性测试

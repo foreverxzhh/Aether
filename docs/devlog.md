@@ -46,3 +46,33 @@
 - Rust 1.96.0 有编译器 bug（serde_core ICE + STATUS_ACCESS_VIOLATION）
   - 已回退到 1.94.0（从 USTC 镜像安装）
   - 需要在 rust-toolchain.toml 中指定 stable 分支
+
+## 2026-06-14 — Phase 3 小闭环1 完成
+
+### 完成的任务
+- **T019** OpenAI Chat Completions 供应商（invoke + 响应解析 + 2个测试）
+- **T022** 通用 OpenAI 兼容适配器（通过 provider.rs 工厂）
+- **T023** PromptBuilder 三层提示词组装（已提前实现）
+- **T024** AIAgent 完整实现（init_model、execute_tool）
+- **T025** run_conversation() ReAct 循环
+- **T026** API 模式分发（chat_completions 已实现，其余待加）
+- **T027** IterationBudget（已提前实现，集成到循环中）
+- **T028** CircuitBreaker（已提前实现，集成到循环中）
+- **T032** Budget 耗尽优雅总结
+- **T034** CLI 增强（-k、-b、-s、环境变量自动读取）
+
+### 测试
+- 新增 2 个 OpenAI 解析测试（普通回复 + 工具调用）
+- 总计 10/10 测试通过
+
+### 验证
+- `cargo build --workspace`: 0 error, 0 warning
+- CLI help 正常
+- 使用正确 API Key 可实际对话（需要手动测试）
+
+### 待完成
+- T020 Anthropic 供应商
+- T021 Ollama 供应商
+- T029 流式响应
+- T030/T031 错误恢复
+- T033 ContextEngine
