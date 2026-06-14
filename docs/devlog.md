@@ -93,3 +93,26 @@
 - T021 Ollama 供应商
 - T030/T031 错误恢复
 - T033 ContextEngine
+
+## 2026-06-14 — Phase 3 全部完成 🎉
+
+### 完成的任务
+- **T020** Anthropic Messages API 供应商（invoke + 响应解析 + 2个测试）
+- **T021** Ollama 供应商（通过 OpenAI 兼容协议）
+- **T030/T031** 错误分类 + 指数退避重试（3次，500ms基数 × 2^n）
+- **T033** ContextEngine（工作目录文件列表 + 时间注入）
+- **T036** Hermes 兼容性测试（skills 格式验证、源码存在性检查）
+
+### 测试结果
+- 15/15 全部通过（7 单元 + 6 集成 + 2 兼容）
+- `cargo check`: 0 error, 0 warning
+- `cargo build --workspace`: 编译通过
+
+### Phase 3 完成清单
+- [x] 3 个 LLM 供应商：OpenAI/DeepSeek + Anthropic + Ollama
+- [x] ReAct 循环 + 流式输出 + 熔断器
+- [x] 迭代预算控制 + 优雅耗尽总结
+- [x] 错误分类 + 退避重试
+- [x] 上下文引擎
+- [x] CLI 工具（-p/-m/-k/-b/-s/-c/-t）
+- [x] Hermes 兼容性测试框架
