@@ -16,7 +16,9 @@ pub struct SkillsList;
 impl Tool for SkillsList {
     fn name(&self) -> &str { "skills_list" }
     fn description(&self) -> &str { "列出所有可用的技能" }
-    fn parameters(&self) -> Value { json!({}) }
+    fn parameters(&self) -> Value { json!({"type": "object", "properties": {
+        "category": {"type": "string", "description": "按分类筛选"}
+    }}) }
     async fn call(&self, _args: Value) -> Result<String, AetherError> {
         let dir = skills_dir();
         if !dir.exists() {
