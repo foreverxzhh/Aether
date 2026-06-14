@@ -235,3 +235,10 @@ R08 Hermes兼容: +3测试 (schema/roundtrip/error-format), 8→11
 R09 文档: README/中文同步, getting-started 更新
 
 最终: 33测试, 三平台验证 ✅, 安全Review ✅, CI ✅
+
+## 2026-06-14 — P2+P3 全部完成，项目结项
+
+P2 (R11-R16): Docker/SSH 终端 + 代码沙箱 + crates.io + Cron/Image/HA 工具 + 52 测试
+P3 (R17-R21): Profile 集成 + Curator 定时 + macOS SwiftPM + Python SDK + CI 三平台
+
+最终: 52 测试 ✅, 17 工具 ✅, 7 平台 SDK ✅, 安全 Review ✅, CI ✅

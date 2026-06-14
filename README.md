@@ -43,13 +43,13 @@
 | **Learning Loop** | ✅ Complete | Background Review auto-creates skills, Curator manages lifecycle |
 | **L1-L4 Memory** | ✅ Complete | MEMORY.md, USER.md, skills database, SQLite + FTS5 full-text search |
 | **Skills System** | ✅ Complete | agentskills.io compatible, auto-generated, versioned, patchable |
-| **Tool System** | ✅ Complete | 11 built-in tools: file, terminal, web search, web scrape, memory, skills |
+| **Tool System** | ✅ Complete | 17 built-in tools: file, terminal, web, memory, skills, cron, docker, ssh, sandbox, image gen |
 | **MCP Protocol** | ✅ Complete | Client (stdio + HTTP) + Server, tool discovery, OAuth |
 | **Context Compression** | ✅ Complete | Automatic LLM summarization + session splitting for long conversations |
 | **Streaming** | ✅ Complete | SSE real-time token output |
 | **Profile System** | ✅ Complete | Multi-instance isolation (independent config/memory/skills) |
 | **Sub-agent Delegation** | ✅ Complete | Isolated child agents with restricted toolkits |
-| **Platform SDKs** | ✅ Verified | Android ARM64 ✅, Windows C# ✅, iOS (Swift) 🚧, Web (WASM) 🚧 |
+| **Platform SDKs** | ✅ Verified | Android ✅, Windows ✅, Web ✅, iOS ✅, macOS ✅, Python ✅, Linux ✅ |
 
 ---
 
