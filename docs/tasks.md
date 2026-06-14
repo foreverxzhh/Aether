@@ -429,11 +429,11 @@
 
 | # | 任务 | 说明 | 预估 |
 |---|------|------|------|
-| R17 | **Profile 完整集成** | ProfileManager 已实现，但 Agent 启动时未实际使用配置隔离路径 | 2-3 天 |
-| R18 | **Curator 定时调度** | run_curator 已实现，但需要后台定时器自动触发（而非手动调用） | 2-3 天 |
-| R19 | **macOS 原生 SDK（Swift Package）** | 复用 iOS 的 Swift 绑定，打包为 Swift Package Manager 包 | 3-5 天 |
-| R20 | **Python SDK** | UniFFI 生成 Python 绑定 → PyPI 包 | 1 周 |
-| R21 | **Windows 原生 build CI** | GitHub Actions 配置 Windows/macOS/Linux 自动构建 + 测试 | 2-3 天 |
+| ✅ R17 | **Profile 完整集成** | ✅ 已完成。AIAgent::hermes_home() + ProfileManager | 2-3 天 |
+| ✅ R18 | **Curator 定时调度** | ✅ 已完成。start_curator_timer 每小时自动触发 | 2-3 天 |
+| ✅ R19 | **macOS SDK** | ✅ 已完成。Package.swift + Aether.swift | 3-5 天 |
+| ✅ R20 | **Python SDK** | ✅ 已完成。uniffi-bindgen + pyproject.toml | 1 周 |
+| ✅ R21 | **CI三平台** | ✅ 已完成。GitHub Actions test-linux/windows/macos | 2-3 天 |
 
 ---
 
