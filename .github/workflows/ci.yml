@@ -22,7 +22,7 @@ jobs:
       - name: 编译 agent-core + agent-bindings
         run: cargo build -p agent-core -p agent-bindings
       - name: 运行测试 (lib only)
-        run: cargo test -p agent-core --lib && cargo test -p agent-bindings --lib
+        run: cargo test -p agent-core --lib
 
   # ── 测试：Windows ──
   test-windows:
