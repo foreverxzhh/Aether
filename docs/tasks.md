@@ -406,9 +406,10 @@
 
 | # | 任务 | 说明 | 预估 |
 |---|------|------|------|
-| R05 | **Android SDK (Kotlin)** | UniFFI 生成 Kotlin 绑定 → 封装为 Android 库 → 基本 Demo App | 1-2 周 |
-| R06 | **Web SDK (WASM)** | wasm-pack 构建 → TypeScript 封装 → 浏览器 Demo | 1 周 |
-| R07 | **iOS SDK (Swift)** | UniFFI 生成 Swift 绑定 → XCFramework → Demo App | 1-2 周 |
+| 🔴 R05 | **Android SDK (Kotlin)** | 🔥 正在做。UniFFI 生成 Kotlin 绑定 → Android 库 → Demo App | 1-2 周 |
+| 🟡 R10 | **Windows SDK (C#)** | 🔥 正在做。UniFFI 生成 C# 绑定 → NuGet 包 | 1-2 周 |
+| ⚪ R07 | **iOS SDK (Swift)** | ⏳ 后续做。依赖 Android 经验后再做 | 1-2 周 |
+| ⚪ R06 | **Web SDK (WASM)** | ⏳ 后续做。需要 WASM 编译环境搭建 | 1 周 |
 | R08 | **更多 Hermes 兼容性测试** | 目前只有 skills 格式验证。需增加：会话 SQLite schema 兼容、消息格式兼容、技能自动生成结果对比 | 3-5 天 |
 | R09 | **基础文档 / API 参考** | ✅ 已完成。README中英双语、getting-started指南、rustdoc API文档 | 2-3 天 |
 
@@ -440,8 +441,9 @@
 
 | 优先级 | 数量 | 总工时 |
 |--------|------|--------|
-| 🔴 P0 | 4 项 | ~1 周 |
-| 🟡 P1 | 5 项 | ~3-5 周 |
+| 🔴 P0 | 4 项 | ✅ 已完成 |
+| 🟡 P1 | 已调整 | 🔥 Android + Windows SDK 进行中 |
+| ⚪ 后续 | R06 Web SDK, R07 iOS SDK | ⏳ WASM 环境就绪后 |
 | 🟢 P2 | 7 项 | ~4-6 周 |
 | ⚪ P3 | 5 项 | ~2-3 周 |
 | **合计** | **21 项** | **~10-15 周** |

@@ -181,3 +181,9 @@ R04 MCP 工具注册框架: API入口就绪
 
 ### 后续
 - 剩余 P1: R05 Android SDK、R06 Web SDK、R07 iOS SDK、R08 兼容测试
+
+## 2026-06-15 — 回退 WASM 尝试，转向 Android + Windows SDK
+
+- R06 (Web SDK/WASM): 回退所有修改。WASM 编译需要独立 crate 和 LLVM 工具链，暂不处理
+- 优先级调整: 🔥 Android SDK + Windows SDK 先做，Web/iOS 后续
+- 代码状态: 已还原到 R08 完成状态，编译 0 error，29 测试通过
