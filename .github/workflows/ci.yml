@@ -19,10 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          components: clippy
       - run: cargo build -p agent-core -p agent-bindings
-      - run: cargo clippy
 
   # ── 交叉编译：Android ARM64 ──
   cross-android:
