@@ -45,11 +45,11 @@ impl Delegation {
 
     /// 批量并行委托
     pub async fn delegate_batch(
-        parent: &AIAgent,
+        _parent: &AIAgent,
         tasks: Vec<(String, Option<String>)>, // (goal, context)
     ) -> Result<Vec<String>, AetherError> {
         let mut handles = Vec::new();
-        for (goal, context) in tasks {
+        for (goal, _context) in tasks {
             let handle = tokio::spawn(async move {
                 // 简化版：这里需要 AetherClient 之类的东西
                 // 实际实现请使用 delegate 方法逐个执行

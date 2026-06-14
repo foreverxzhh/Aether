@@ -1,6 +1,6 @@
 //! Curator — 技能生命周期管理
 
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use serde::{Deserialize, Serialize};
 use crate::error::AetherError;
 

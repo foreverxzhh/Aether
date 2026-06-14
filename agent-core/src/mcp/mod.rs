@@ -85,8 +85,9 @@ impl McpClient {
                     let stdin = p.stdin.as_ref();
                     let stdout = p.stdout.as_ref();
                     if let (Some(_in), Some(_out)) = (stdin, stdout) {
-                        // TODO: 完整 stdio JSON-RPC 实现
-                        return Err(AetherError::McpConnectionError("stdio 传输完整实现待完成".into()));
+                        // stdio JSON-RPC 需要在子进程生命周期内管理读写
+                        // 当前仅 HTTP 传输完全可用。stdio 需完善管道读写
+                        return Err(AetherError::McpConnectionError("stdio JSON-RPC 传输完善中，请使用 HTTP 模式".into()));
                     }
                 }
                 return Err(AetherError::McpConnectionError("MCP 子进程未运行".into()));

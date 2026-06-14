@@ -35,7 +35,7 @@ impl ContextCompressor {
     /// 执行压缩：保留头部+尾部，用 LLM 摘要替换中间部分
     pub async fn compress(
         messages: &[Message],
-        context_limit: u32,
+        _context_limit: u32,
         model: &dyn crate::llm::ChatModel,
     ) -> Result<CompressionResult, AetherError> {
         if messages.is_empty() {

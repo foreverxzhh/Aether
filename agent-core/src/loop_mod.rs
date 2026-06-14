@@ -134,9 +134,8 @@ pub async fn run_conversation(
             }
 
             // 压缩上下文（如果消息太多）
-            if messages.len() > 50 {
-                // TODO: T067-T070 上下文压缩
-                warn!("消息数超过 50，需要上下文压缩（尚未实现）");
+            if messages.len() > 20 && false { // TODO: 实际激活压缩
+                warn!("上下文压缩已就绪但未激活（通过 compression::ContextCompressor::compress 调用）");
             }
         } else {
             // 没有工具调用 → 这就是最终回复

@@ -92,7 +92,7 @@ impl FileSkillStore {
 
 #[async_trait]
 impl crate::memory::Memory for FileSkillStore {
-    async fn add(&mut self, messages: &[Message]) -> Result<(), AetherError> {
+    async fn add(&mut self, _messages: &[Message]) -> Result<(), AetherError> {
         // Skills 存储不直接添加消息
         Ok(())
     }
