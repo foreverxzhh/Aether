@@ -2,6 +2,7 @@ pub mod openai;
 pub mod anthropic;
 pub mod ollama;
 pub mod provider;
+pub mod caching;
 
 use async_trait::async_trait;
 use crate::error::AetherError;

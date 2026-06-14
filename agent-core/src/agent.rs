@@ -11,6 +11,8 @@ use crate::tools::terminal_tool::Terminal;
 use crate::tools::web_tools::{WebSearch, WebExtract};
 use crate::tools::memory_tool::Memory;
 use crate::tools::skills_tool::{SkillsList, SkillView, SkillManage};
+use crate::tools::extra_tools::{CronJob, ImageGenerate, HomeAssistant};
+use crate::tools::terminal_backends::{DockerTerminal, SshTerminal, ExecuteCode};
 use crate::types::model::{StreamChunk, TurnResult};
 
 /// Aether Agent 主类
@@ -67,6 +69,14 @@ impl AIAgent {
         registry.register(SkillsList);
         registry.register(SkillView);
         registry.register(SkillManage);
+        // 额外工具
+        registry.register(CronJob);
+        registry.register(ImageGenerate);
+        registry.register(HomeAssistant);
+        // 终端后端扩展
+        registry.register(DockerTerminal);
+        registry.register(SshTerminal);
+        registry.register(ExecuteCode);
         Self { config, model: None, tools: Arc::new(RwLock::new(registry)) }
     }
 

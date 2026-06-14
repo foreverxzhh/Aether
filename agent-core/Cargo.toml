@@ -5,6 +5,9 @@ edition.workspace = true
 authors.workspace = true
 license.workspace = true
 repository.workspace = true
+description = "Cross-platform AI Agent SDK — Hermes architecture in Rust. Runs on Android, iOS, Windows, macOS, Linux, Web."
+keywords = ["ai", "agent", "llm", "sdk", "cross-platform", "hermes"]
+categories = ["development-tools", "api-bindings"]
 
 [dependencies]
 # 核心依赖（所有平台通用）
