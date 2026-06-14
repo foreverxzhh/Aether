@@ -4,7 +4,7 @@
   <p align="center">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat" alt="License: MIT"></a>
     <img src="https://img.shields.io/badge/status-alpha-orange?style=flat" alt="Status: Alpha">
-    <img src="https://img.shields.io/badge/tests-33%20passing-brightgreen?style=flat" alt="Tests: 33 passing">
+    <img src="https://img.shields.io/badge/tests-52%20passing-brightgreen?style=flat" alt="Tests: 52 passing">
 <img src="https://img.shields.io/badge/verified-Android%20%7C%20Windows%20%7C%20Web-brightgreen?style=flat" alt="Verified: Android, Windows, Web">
     <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat" alt="Platform: Cross-platform">
     <img src="https://img.shields.io/badge/built%20with-Rust-orange?style=flat" alt="Built with Rust">
@@ -131,7 +131,7 @@ var reply = agent.Chat("你好");
 | iOS SDK | 🚧 Next | Swift bindings generated, need XCFramework packaging |
 | Web SDK | ✅ Verified | agent-wasm crate, web_sys::fetch, 587KB .wasm, HTML demo |
 | CI/CD | ✅ Ready | GitHub Actions: test-linux/windows/macos + cross-android + cross-wasm |
-| Tests | ✅ 33 passing | Unit + integration + Hermes compatibility + doc-tests |
+| Tests | ✅ 52 passing | 18 unit + 11 Hermes compat + 19 integration + 4 doc |
 | crates.io | ❌ TODO | Publish agent-core for Rust ecosystem |
 
 ---
