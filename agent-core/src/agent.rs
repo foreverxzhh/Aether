@@ -1,30 +1,89 @@
+use std::sync::Arc;
+use tokio::sync::RwLock;
+
 use crate::config::AgentConfig;
+use crate::error::AetherError;
+use crate::llm::ChatModel;
+use crate::llm::provider::create_chat_model;
+use crate::loop_mod;
+use crate::tools::ToolRegistry;
+use crate::types::model::TurnResult;
 
 /// AIAgent — 核心 Agent 类
-#[derive(Debug)]
 pub struct AIAgent {
     pub config: AgentConfig,
+    model: Option<Box<dyn ChatModel>>,
+    tools: Arc<RwLock<ToolRegistry>>,
 }
 
 impl AIAgent {
-    /// 创建 Agent（用 Builder 构建的配置）
+    /// 创建 Agent
     pub fn new(config: AgentConfig) -> Self {
-        Self { config }
+        Self {
+            config,
+            model: None,
+            tools: Arc::new(RwLock::new(ToolRegistry::new())),
+        }
     }
 
-    /// 简单对话（TODO: Phase 3 实现完整 ReAct 循环）
-    pub async fn chat(&self, _message: &str) -> Result<String, crate::error::AetherError> {
-        // TODO: 实现 ReAct 循环
-        Ok("Aether 响应待实现".to_string())
+    /// 获取模型引用
+    pub fn model(&self) -> Option<&dyn ChatModel> {
+        self.model.as_deref()
     }
 
-    /// 当前模型名称
-    pub fn model(&self) -> &str {
-        &self.config.model
+    /// 初始化 LLM 供应商（延迟初始化，因为需要 async）
+    pub async fn init_model(&mut self) -> Result<(), AetherError> {
+        let model = create_chat_model(&self.config)?;
+        self.model = Some(model);
+        Ok(())
     }
 
-    /// 当前供应商
-    pub fn provider(&self) -> &str {
-        &self.config.provider
+    /// 注册工具
+    pub async fn register_tool(&self, tool: impl crate::tools::Tool + 'static) {
+        let mut registry = self.tools.write().await;
+        registry.register(Box::new(tool));
+    }
+
+    /// 获取工具定义（JSON Schema 格式，发给 LLM）
+    pub fn get_tool_definitions(&self) -> Vec<serde_json::Value> {
+        vec![]
+        // TODO: Phase 4 实现从 ToolRegistry 生成 tool definitions
+    }
+
+    /// 执行工具
+    pub async fn execute_tool(
+        &self,
+        name: &str,
+        args: serde_json::Value,
+    ) -> Result<String, AetherError> {
+        let registry = self.tools.read().await;
+        let tool = registry.find(name).ok_or_else(|| {
+            AetherError::ToolNotFound(name.to_string())
+        })?;
+        tool.call(args).await
+    }
+
+    /// 简单对话
+    pub async fn chat(&self, message: &str) -> Result<String, AetherError> {
+        let result = self.run_conversation(message).await?;
+        Ok(result.final_response.unwrap_or_default())
+    }
+
+    /// 完整对话（返回详细结果）
+    pub async fn run_conversation(&self, user_message: &str) -> Result<TurnResult, AetherError> {
+        if self.model.is_none() {
+            return Err(AetherError::ConfigError(
+                "模型未初始化。请先调用 init_model()".to_string(),
+            ));
+        }
+        loop_mod::run_conversation(self, user_message).await
+    }
+
+    /// 获取供应商名称
+    pub fn provider_name(&self) -> &str {
+        self.model
+            .as_ref()
+            .map(|m| m.provider_name())
+            .unwrap_or("unknown")
     }
 }
