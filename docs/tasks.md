@@ -386,3 +386,62 @@
 - 流式输出
 - 优雅的错误处理
 - 通过 Hermes 兼容性测试
+
+---
+
+## 后续仍需实现的内容
+
+**说明**: 这些不是 Phase 1-9 的遗漏，而是已识别出的「应该做但还没做」的工作。按优先级排序。
+
+### 🔴 P0 — 必须做（核心能力缺口）
+
+| # | 任务 | 说明 | 预估 |
+|---|------|------|------|
+| R01 | **上下文压缩接入 Agent 循环** | compression::ContextCompressor 已实现，但 loop_mod.rs 中未实际调用。需在消息数 > 20 或 token 超限时触发压缩→会话拆分→budget退还 | 1 天 |
+| R02 | **Background Review 接入 Agent 循环** | review::review_and_learn 已实现，但 AIAgent.run_conversation 结束后未自动调用。需在每轮对话完成后 spawn 异步任务执行审查 | 1 天 |
+| R03 | **MCP stdio 传输完善** | HTTP/SSE 传输没问题，stdio transport 需要完整的子进程生命周期管理（stdin 写入 JSON-RPC 请求 → stdout 读取响应） | 2-3 天 |
+| R04 | **MCP 服务器工具自动注册到 ToolRegistry** | 当 MCP 服务器连接后，其 tool list 应自动注册到 Agent 的 ToolRegistry 中，使得 LLM 可以调用 MCP 工具 | 2-3 天 |
+
+### 🟡 P1 — 重要（提升可用性）
+
+| # | 任务 | 说明 | 预估 |
+|---|------|------|------|
+| R05 | **Android SDK (Kotlin)** | UniFFI 生成 Kotlin 绑定 → 封装为 Android 库 → 基本 Demo App | 1-2 周 |
+| R06 | **Web SDK (WASM)** | wasm-pack 构建 → TypeScript 封装 → 浏览器 Demo | 1 周 |
+| R07 | **iOS SDK (Swift)** | UniFFI 生成 Swift 绑定 → XCFramework → Demo App | 1-2 周 |
+| R08 | **更多 Hermes 兼容性测试** | 目前只有 skills 格式验证。需增加：会话 SQLite schema 兼容、消息格式兼容、技能自动生成结果对比 | 3-5 天 |
+| R09 | **基础文档 / API 参考** | rustdoc 级别的 API 文档覆盖，README 完善使用示例（各平台） | 2-3 天 |
+
+### 🟢 P2 — 增强（锦上添花）
+
+| # | 任务 | 说明 | 预估 |
+|---|------|------|------|
+| R10 | **Windows SDK (C#)** | UniFFI 生成 C# 绑定 → NuGet 包 | 1-2 周 |
+| R11 | **远程终端后端（Docker/SSH）** | terminal_tool 增加 Docker 容器内执行 和 SSH 远程执行模式 | 1 周 |
+| R12 | **浏览器工具（简化版）** | 基于 headless_chrome crate 实现 navigate/snapshot/click/type 四个核心操作 | 2-3 周 |
+| R13 | **代码执行沙箱（基础版）** | 本地隔离进程执行 Python/JS 代码，限制资源（内存、时间、网络） | 1 周 |
+| R14 | **发布到 crates.io** | 完善 Cargo.toml metadata → cargo publish → 维护版本 | 1 天 |
+| R15 | **更多内置工具** | 从 Hermes 的 70+ 工具中选择常用实现：视频生成、图像生成、定时任务(Cron)、HomeAssistant 等 | 每个 1-3 天 |
+| R16 | **测试覆盖提升到 50+** | 当前 18 个测试。目标：覆盖核心路径（Agent 创建→对话→工具调用→记忆→流式） | 1 周 |
+
+### ⚪ P3 — 做了更好（非必要）
+
+| # | 任务 | 说明 | 预估 |
+|---|------|------|------|
+| R17 | **Profile 完整集成** | ProfileManager 已实现，但 Agent 启动时未实际使用配置隔离路径 | 2-3 天 |
+| R18 | **Curator 定时调度** | run_curator 已实现，但需要后台定时器自动触发（而非手动调用） | 2-3 天 |
+| R19 | **macOS 原生 SDK（Swift Package）** | 复用 iOS 的 Swift 绑定，打包为 Swift Package Manager 包 | 3-5 天 |
+| R20 | **Python SDK** | UniFFI 生成 Python 绑定 → PyPI 包 | 1 周 |
+| R21 | **Windows 原生 build CI** | GitHub Actions 配置 Windows/macOS/Linux 自动构建 + 测试 | 2-3 天 |
+
+---
+
+### 总剩余工作量估算
+
+| 优先级 | 数量 | 总工时 |
+|--------|------|--------|
+| 🔴 P0 | 4 项 | ~1 周 |
+| 🟡 P1 | 5 项 | ~3-5 周 |
+| 🟢 P2 | 7 项 | ~4-6 周 |
+| ⚪ P3 | 5 项 | ~2-3 周 |
+| **合计** | **21 项** | **~10-15 周** |
