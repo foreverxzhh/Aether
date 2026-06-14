@@ -125,12 +125,12 @@ var reply = agent.Chat("你好");
 | Area | Progress | Notes |
 |------|----------|-------|
 | Core Engine (102 tasks) | ✅ 100% | ReAct, LLM, tools, memory, skills, MCP, compression, learning loop |
-| Android SDK | ✅ Buildable | UniFFI Kotlin + Gradle project, NDK cross-compilation ready |
+| Android SDK | ✅ Verified | Real ARM64 device: Rust→DeepSeek→conversation, 5MB .so |
 | Windows SDK | ✅ Buildable | C API + C# P/Invoke + NuGet spec |
 | iOS SDK | 🚧 Next | Swift bindings generated, need XCFramework packaging |
 | Web SDK | 🚧 Next | WASM compilation pending toolchain setup |
-| CI/CD | ❌ TODO | GitHub Actions for multi-platform builds |
-| Tests | ✅ 29 passing | Unit + integration + Hermes compatibility + doc-tests |
+| CI/CD | ✅ Ready | GitHub Actions: test-linux/windows/macos + cross-android + cross-wasm |
+| Tests | ✅ 31 passing | Unit + integration + Hermes compatibility + doc-tests |
 | crates.io | ❌ TODO | Publish agent-core for Rust ecosystem |
 
 ---
