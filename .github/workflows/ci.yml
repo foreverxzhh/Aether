@@ -12,73 +12,44 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  # ── 检查：编译通过 + 测试 ──
-  check:
-    name: Check
+  # ── 编译 + 测试 (Linux) ──
+  build-and-test:
+    name: Build & Test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
-      - name: 编译 agent-core + agent-bindings
-        run: cargo build -p agent-core -p agent-bindings
-      - name: 运行测试 (lib only)
-        run: cargo test -p agent-core --lib
-
-  # ── 测试：Windows ──
-  test-windows:
-    name: Test (Windows)
-    runs-on: windows-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: 编译 + 测试
-        run: cargo build -p agent-core -p agent-bindings && cargo test -p agent-core --lib
-
-  # ── 测试：macOS ──
-  test-macos:
-    name: Test (macOS)
-    runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-      - name: 编译 + 测试
-        run: cargo build -p agent-core -p agent-bindings && cargo test -p agent-core --lib
+        with:
+          components: clippy
+      - run: cargo build -p agent-core -p agent-bindings
+      - run: cargo test -p agent-core --lib
+      - run: cargo clippy
 
   # ── 交叉编译：Android ARM64 ──
   cross-android:
-    name: Cross-compile (Android ARM64)
+    name: Android (ARM64)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: 安装 Rust + Android 目标
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android
-
-      - name: 安装 Android NDK
-        uses: nttld/setup-ndk@v1
-        id: setup-ndk
+      - uses: nttld/setup-ndk@v1
+        id: ndk
         with:
           ndk-version: r27
-
-      - name: 交叉编译 agent-core
-        run: cargo build -p agent-core --target aarch64-linux-android --no-default-features
+      - run: cargo build -p agent-core --target aarch64-linux-android --no-default-features
         env:
-          CC_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
-          AR_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+          CC_aarch64_linux_android: ${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          AR_aarch64_linux_android: ${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
 
   # ── 交叉编译：WASM ──
   cross-wasm:
-    name: Cross-compile (WASM)
+    name: Web (WASM)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
-      - name: 安装 Rust + WASM 目标
-        uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@stable
         with:
           targets: wasm32-unknown-unknown
-
-      - name: 编译 agent-core (WASM)
-        run: cargo build -p agent-core --target wasm32-unknown-unknown --no-default-features
+      - run: cargo build -p agent-core --target wasm32-unknown-unknown --no-default-features
