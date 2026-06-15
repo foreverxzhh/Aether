@@ -36,6 +36,7 @@ scraper = { version = "0.19", optional = true }
 [features]
 default = ["native"]
 native = ["tokio", "reqwest", "rusqlite", "tracing", "tracing-subscriber", "uuid", "futures", "inventory", "portable-pty", "similar", "glob", "scraper"]
+experimental_stubs = []  # T-1.1: 仅开发/演示，不暴露给LLM
 
 [dev-dependencies]
 tempfile = "3"

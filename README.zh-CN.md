@@ -30,17 +30,17 @@
 
 | 功能 | 状态 | 说明 |
 |------|------|------|
-| **Agent 引擎** | ✅ 完成 | ReAct 循环，4 个 LLM 供应商（OpenAI/Anthropic/DeepSeek/Ollama） |
-| **学习闭环** | ✅ 完成 | Background Review 自动生成技能，Curator 管理生命周期 |
-| **L1-L4 记忆** | ✅ 完成 | MEMORY.md、USER.md、技能库、SQLite + FTS5 全文搜索 |
-| **技能系统** | ✅ 完成 | agentskills.io 兼容，自动生成，版本管理，增量更新 |
-| **工具系统** | ✅ 完成 | 17 个内置工具：文件、终端、Web、记忆、技能、Cron、Docker、SSH、沙箱、图像 |
-| **MCP 协议** | ✅ 完成 | 客户端（stdio + HTTP）+ 服务端，工具发现，OAuth |
-| **上下文压缩** | ✅ 完成 | LLM 自动摘要 + 会话拆分，长对话不崩 |
-| **流式输出** | ✅ 完成 | SSE 逐字实时输出 |
-| **Profile 系统** | ✅ 完成 | 多实例隔离（独立配置/记忆/技能） |
-| **子 Agent 委托** | ✅ 完成 | 隔离子任务执行，限制工具集 |
-| **平台 SDK** | ✅ 已验证 | Android ✅, Windows ✅, Web ✅, Python ✅, Linux ✅, iOS 🚧, macOS 🚧 |
+| **Agent 引擎** | 🟡 部分 | ReAct循环可用(chat_completions)。缺失：Anthropic流式、Codex模式 |
+| **学习闭环** | 🟠 桩 | Review代码存在但非子Agent；Curator从未调度；技能全叫auto-learned-skill |
+| **L1-L4 记忆** | 🟡 部分 | L1/L2可用；FTS5声明但无触发器，搜索用LIKE而非MATCH |
+| **技能系统** | ✅ 可用 | agentskills.io解析+CRUD+搜索可用 |
+| **工具系统** | 🟡 部分 | 9个真工具。ExecuteCode非沙箱；terminal仅Windows(cmd /C) |
+| **MCP 协议** | 🟠 桩 | HTTP list_tools可用；stdio call_tool无条件Err；无OAuth |
+| **上下文压缩** | 🟠 桩 | Token估算器存在但压缩向量构建后丢弃，未接入循环 |
+| **流式输出** | 🟡 部分 | OpenAI SSE可用(仅文本)；Anthropic流式报错；工具增量丢弃 |
+| **Profile 系统** | 🟠 桩 | ProfileManager存在但active硬编码"default" |
+| **子 Agent 委托** | 🟠 桩 | delegate用空工具数组；delegate_batch是format!宏 |
+| **平台 SDK** | 🟡 部分 | Android原生二进制测试过；Web绕开agent-core；iOS/macOS未验证 |
 
 ---
 

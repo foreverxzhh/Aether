@@ -3,7 +3,6 @@ use crate::error::AetherError;
 use crate::llm::provider::create_chat_model;
 use crate::llm::{ChatModel, Streamable};
 use crate::loop_mod;
-use crate::tools::extra_tools::{CronJob, HomeAssistant, ImageGenerate};
 use crate::tools::file_tools::{Patch, ReadFile, SearchFiles, WriteFile};
 use crate::tools::memory_tool::Memory;
 use crate::tools::skills_tool::{SkillManage, SkillView, SkillsList};
@@ -69,11 +68,8 @@ impl AIAgent {
         registry.register(SkillsList);
         registry.register(SkillView);
         registry.register(SkillManage);
-        // 额外工具
-        registry.register(CronJob);
-        registry.register(ImageGenerate);
-        registry.register(HomeAssistant);
-        // 终端后端扩展
+        // T-1.1: CronJob/ImageGenerate/HomeAssistant 已移除（桩函数，向LLM撒谎）
+        // T-3.6: 真 delegate 见 future task
         registry.register(DockerTerminal);
         registry.register(SshTerminal);
         registry.register(ExecuteCode);
@@ -179,7 +175,7 @@ impl AIAgent {
 
     /// 获取当前 profile 的 HERMES_HOME 路径
     pub fn hermes_home(&self) -> std::path::PathBuf {
-        crate::profile::ProfileManager::new().home()
+        crate::profile::ProfileManager::new(self.config.profile.clone()).home()
     }
 
     pub fn provider_name(&self) -> &str {

@@ -31,26 +31,26 @@
 | Embed in Windows app | ❌ | ✅ C# SDK (verified) |
 | Run in browser | ❌ | ✅ WASM (587KB) |
 | Embed as Rust library | ❌ | ✅ `cargo add agent-core` |
-| Full Hermes feature parity | ✅ | ✅ Core engine + tools |
+| Full Hermes feature parity | ✅ | 🟡 Partial — core engine works; 8/11 features need work |
 | Performance | 🐍 Python | 🦀 Native compiled |
 
 ---
 
 ## ✨ Features
 
-| Capability | Status | What it means |
-|-----------|--------|---------------|
-| **Agent Engine** | ✅ Complete | ReAct loop with 3 API modes (OpenAI / Anthropic / DeepSeek / Ollama) |
-| **Learning Loop** | ✅ Complete | Background Review auto-creates skills, Curator manages lifecycle |
-| **L1-L4 Memory** | ✅ Complete | MEMORY.md, USER.md, skills database, SQLite + FTS5 full-text search |
-| **Skills System** | ✅ Complete | agentskills.io compatible, auto-generated, versioned, patchable |
-| **Tool System** | ✅ Complete | 17 built-in tools: file, terminal, web, memory, skills, cron, docker, ssh, sandbox, image gen |
-| **MCP Protocol** | ✅ Complete | Client (stdio + HTTP) + Server, tool discovery, OAuth |
-| **Context Compression** | ✅ Complete | Automatic LLM summarization + session splitting for long conversations |
-| **Streaming** | ✅ Complete | SSE real-time token output |
-| **Profile System** | ✅ Complete | Multi-instance isolation (independent config/memory/skills) |
-| **Sub-agent Delegation** | ✅ Complete | Isolated child agents with restricted toolkits |
-| **Platform SDKs** | ✅ Verified | Android ✅, Windows ✅, Web ✅, Python ✅, Linux ✅, iOS 🚧, macOS 🚧 |
+| Capability | Status | What it means | Missing |
+|-----------|--------|---------------|---------|
+| **Agent Engine** | 🟡 Partial | ReAct loop works (chat_completions). OpenAI provider complete | Anthropic streaming: Err; no Codex Responses mode |
+| **Learning Loop** | 🟠 Stub | Background Review code exists but runs inline, not as isolated child agent | Curator never scheduled; all learned skills named `auto-learned-skill` |
+| **L1-L4 Memory** | 🟡 Partial | L1 (MEMORY.md) + L2 (USER.md) work; skills/ dir works | L4 SQLite FTS5 declared but no triggers; session `search` uses LIKE not MATCH |
+| **Skills System** | ✅ Functional | agentskills.io parse + CRUD + search works | Skill patching not implemented |
+| **Tool System** | 🟡 Partial | 9 real tools (file/terminal/web/memory/skills/docker/ssh/execute_code) | ExecuteCode runs on host, not sandboxed; terminal is Windows-only (`cmd /C`) |
+| **MCP Protocol** | 🟠 Stub | HTTP list_tools works | stdio `call_tool` returns Err unconditionally; no initialize handshake; no OAuth |
+| **Context Compression** | 🟠 Stub | Token estimator compiles | Compressor builds `compressed` vector then drops it — logic not wired into loop |
+| **Streaming** | 🟡 Partial | OpenAI SSE streaming works (text only) | Anthropic streaming returns Err; tool_call deltas discarded in SSE |
+| **Profile System** | 🟠 Stub | ProfileManager exists | `active` field hardcoded `"default"`; `AgentConfig.profile` never read |
+| **Sub-agent Delegation** | 🟠 Stub | `delegate()` exists but uses `tools: &[]` (not "restricted", is zero tools) | `delegate_batch` is `format!("[task done]")` stub — does not call LLM |
+| **Platform SDKs** | 🟡 Partial | Android: native binary tested on device; Windows: C# P/Invoke tested | Web SDK bypasses agent-core (plain fetch wrapper); iOS/macOS unverified |
 
 ---
 
@@ -126,14 +126,14 @@ var reply = agent.Chat("你好");
 
 | Area | Progress | Notes |
 |------|----------|-------|
-| Core Engine (102 tasks) | ✅ 100% | ReAct, LLM, tools, memory, skills, MCP, compression, learning loop |
-| Android SDK | ✅ Verified | Real ARM64 device: Rust→DeepSeek→conversation, 5MB .so |
-| Windows SDK | ✅ Verified | C# P/Invoke: agent_bindings.dll → DeepSeek, full conversation OK |
-| iOS / macOS SDK | 🚧 Code ready | Swift 绑定+Pkg.swift+Wrapper, 需 macOS+Xcode 验证 |
-| Web SDK | ✅ Verified | agent-wasm crate, web_sys::fetch, 587KB .wasm, HTML demo |
-| CI/CD | ✅ Ready | GitHub Actions: test-linux/windows/macos + cross-android + cross-wasm |
-| Tests | ✅ 52 passing | 18 unit + 11 Hermes compat + 19 integration + 4 doc |
-| crates.io | ❌ TODO | Publish agent-core for Rust ecosystem |
+| Core Engine | 🟡 Partial | ReAct loop + OpenAI provider work. Feature table above shows real status |
+| Android SDK | 🟡 Partial | Native binary tested on device. No CI, jniLibs not in repo |
+| Windows SDK | 🟡 Partial | C# P/Invoke tested. No CI, DLL not in repo |
+| iOS / macOS SDK | 🚧 Code ready | Swift bindings exist. Not built or tested |
+| Web SDK | 🟠 Stub | fetch() wrapper, does not use agent-core |
+| CI/CD | 🟡 Partial | Build passes; full test matrix not yet running |
+| Tests | 🟡 Partial | 18 unit tests pass; integration tests need CI fixes |
+| crates.io | 🚧 TODO | Not published. See FIX_PLAN.md for roadmap |
 
 ---
 

@@ -2,6 +2,7 @@
 mod runtime;
 
 #[cfg(feature = "uniffi")]
+#[path = "uniffi.rs"]
 pub mod uniffi_sdk;
 
 #[cfg(feature = "uniffi")]
@@ -12,9 +13,11 @@ pub mod wasm;
 
 pub mod capi;
 
+#[cfg(feature = "native")]
 use agent_core::AIAgent;
 use agent_core::config::AgentConfig;
 
+#[cfg(feature = "native")]
 pub fn create_agent(provider: &str, model: &str, api_key: Option<&str>) -> AIAgent {
     let mut config = AgentConfig::default();
     config.provider = provider.to_string();

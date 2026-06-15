@@ -24,7 +24,7 @@ impl CircuitBreaker {
             tool_name,
             serde_json::to_string(args).unwrap_or_default()
         );
-        let hash = md5_compute(&signature);
+        let hash = signature_hash(&signature);
 
         let mut hist = self.history.lock().unwrap();
         let count = hist.entry(hash.clone()).or_insert(0);
@@ -43,8 +43,8 @@ impl CircuitBreaker {
     }
 }
 
-/// 简易 MD5 哈希（模拟，不依赖外部 crate）
-fn md5_compute(input: &str) -> String {
+/// 签名哈希（SipHash via DefaultHasher，非MD5。跨进程不保证稳定，仅用于同进程防重复）
+fn signature_hash(input: &str) -> String {
     use std::hash::{Hash, Hasher};
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     input.hash(&mut hasher);

@@ -20,6 +20,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo build -p agent-core -p agent-bindings
+      - run: cargo test -p agent-core --lib
 
   # ── 交叉编译：Android ARM64 ──
   cross-android:

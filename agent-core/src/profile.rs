@@ -31,9 +31,9 @@ pub struct ProfileManager {
 }
 
 impl ProfileManager {
-    pub fn new() -> Self {
+    pub fn new(active: Option<String>) -> Self {
         Self {
-            active: "default".into(),
+            active: active.unwrap_or_else(|| "default".into()),
         }
     }
     pub fn active(&self) -> &str {

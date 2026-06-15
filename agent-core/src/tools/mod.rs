@@ -1,3 +1,5 @@
+// T-1.1: extra_tools gated behind feature flag (stubs that lie to LLM)
+#[cfg(feature = "experimental_stubs")]
 pub mod extra_tools;
 pub mod file_tools;
 pub mod memory_tool;
