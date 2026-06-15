@@ -266,6 +266,7 @@ impl ChatModel for OpenAIProvider {
             response,
             buffer: String::new(),
             done: false,
+            pending_calls: std::collections::HashMap::new(),
         }))
     }
 }
@@ -277,6 +278,15 @@ pub struct OpenAIStream {
     response: reqwest::Response,
     buffer: String,
     done: bool,
+    // T-3.1: 累积 tool_call 增量
+    pending_calls: std::collections::HashMap<u32, PendingToolCall>,
+}
+
+#[derive(Default)]
+struct PendingToolCall {
+    id: Option<String>,
+    name: Option<String>,
+    arguments: String,
 }
 
 #[async_trait]
@@ -343,11 +353,25 @@ impl OpenAIStream {
         }
     }
 
-    fn parse_chunk(&self, data: &str) -> Result<StreamChunk, ()> {
+    fn parse_chunk(&mut self, data: &str) -> Result<StreamChunk, ()> {
         let sse: OpenAIStreamChunk = serde_json::from_str(data).map_err(|_| ())?;
         let choice = sse.choices.into_iter().next().ok_or(())?;
 
         let delta = choice.delta.content.unwrap_or_default();
+
+        // T-3.1: 累积 tool_call 增量（OpenAI SSE 可能分多个 chunk 发送）
+        if let Some(tcs) = &choice.delta.tool_calls {
+            for tc in tcs {
+                let idx = tc.index.unwrap_or(0);
+                let entry = self.pending_calls.entry(idx).or_default();
+                if let Some(id) = &tc.id { entry.id = Some(id.clone()); }
+                if let Some(ref func) = tc.function {
+                    if let Some(ref name) = func.name { entry.name = Some(name.clone()); }
+                    if let Some(ref args) = func.arguments { entry.arguments.push_str(args); }
+                }
+            }
+        }
+
         let finish_reason = choice.finish_reason.and_then(|f| match f.as_str() {
             "stop" => Some(FinishReason::Stop),
             "length" => Some(FinishReason::Length),
@@ -355,9 +379,24 @@ impl OpenAIStream {
             other => Some(FinishReason::Other(other.to_string())),
         });
 
+        // 当流结束时，如果累积了 tool_calls，返回它们
+        let final_tool_calls = if finish_reason == Some(FinishReason::ToolCalls) && !self.pending_calls.is_empty() {
+            let calls: Vec<_> = self.pending_calls.drain().map(|(_, p)| {
+                crate::types::model::ToolCallInfo {
+                    id: p.id.unwrap_or_default(),
+                    name: p.name.unwrap_or_default(),
+                    arguments: p.arguments.clone(),
+                }
+            }).collect();
+            self.pending_calls.clear();
+            Some(calls)
+        } else {
+            None
+        };
+
         Ok(StreamChunk {
             delta,
-            tool_calls: None,
+            tool_calls: final_tool_calls,
             finish_reason,
             usage: None,
         })
@@ -387,6 +426,23 @@ struct StreamDelta {
     content: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     role: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    tool_calls: Option<Vec<SseToolCall>>,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct SseToolCall {
+    index: Option<u32>,
+    id: Option<String>,
+    function: Option<SseFunction>,
+}
+
+#[derive(Debug, Deserialize)]
+#[allow(dead_code)]
+struct SseFunction {
+    name: Option<String>,
+    arguments: Option<String>,
 }
 
 // ── OpenAI API 响应格式 ──
