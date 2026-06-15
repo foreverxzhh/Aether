@@ -30,7 +30,18 @@ impl SqliteSessionStore {
                  role TEXT NOT NULL, content TEXT, tool_calls TEXT, tool_call_id TEXT,
                  created_at TEXT NOT NULL DEFAULT (datetime('now'))
              );
-             CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(content, content=messages, content_rowid=id);"
+             CREATE VIRTUAL TABLE IF NOT EXISTS messages_fts USING fts5(content, tool_calls, content=messages, content_rowid=id);
+             -- T-2.3: FTS5 同步触发器
+             CREATE TRIGGER IF NOT EXISTS msgs_ai AFTER INSERT ON messages BEGIN
+                 INSERT INTO messages_fts(rowid, content, tool_calls) VALUES (new.id, new.content, new.tool_calls);
+             END;
+             CREATE TRIGGER IF NOT EXISTS msgs_ad AFTER DELETE ON messages BEGIN
+                 INSERT INTO messages_fts(messages_fts, rowid, content, tool_calls) VALUES ('delete', old.id, old.content, old.tool_calls);
+             END;
+             CREATE TRIGGER IF NOT EXISTS msgs_au AFTER UPDATE ON messages BEGIN
+                 INSERT INTO messages_fts(messages_fts, rowid, content, tool_calls) VALUES ('delete', old.id, old.content, old.tool_calls);
+                 INSERT INTO messages_fts(rowid, content, tool_calls) VALUES (new.id, new.content, new.tool_calls);
+             END;"
         ).map_err(|e| AetherError::DatabaseError(format!("建表失败: {}", e)))?;
 
         Ok(Self {
@@ -125,9 +136,11 @@ impl super::SessionStore for SqliteSessionStore {
             let msgs = mstmt.query_map(params![session_id], |row| {
                 let role: String = row.get(0)?;
                 let content: Option<String> = row.get(1)?;
-                let _tc: Option<String> = row.get(2)?;
+                let tc_json: Option<String> = row.get(2)?;
                 let tcid: Option<String> = row.get(3)?;
-                Ok(Message { role: to_role(&role), content: content.map(Content::Text), tool_calls: None, tool_call_id: tcid, name: None })
+                // T-2.3: 真解析 tool_calls（之前丢弃到 _tc）
+                let tool_calls = tc_json.and_then(|s| serde_json::from_str(&s).ok());
+                Ok(Message { role: to_role(&role), content: content.map(Content::Text), tool_calls, tool_call_id: tcid, name: None })
             }).map_err(|e| AetherError::DatabaseError(e.to_string()))?;
             use crate::types::message::Content;
 
@@ -145,7 +158,7 @@ impl super::SessionStore for SqliteSessionStore {
             let mut stmt = conn.prepare(
                 "SELECT DISTINCT s.id,s.parent_session_id,s.source,s.model,s.provider,s.created_at,s.updated_at
                  FROM sessions s JOIN messages m ON m.session_id=s.id
-                 WHERE m.content LIKE ?1 LIMIT ?2"
+                 WHERE m.content LIKE '%' || ?1 || '%' LIMIT ?2"
             ).map_err(|e| AetherError::DatabaseError(e.to_string()))?;
 
             let rows = stmt.query_map(params![format!("%{}%", query), limit as i64], |row| {
