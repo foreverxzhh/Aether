@@ -4,7 +4,10 @@ use serde_json::Value;
 use wasm_bindgen::prelude::*;
 use web_sys::{Headers, Request, RequestInit, RequestMode};
 
-/// 浏览器版 Aether Agent（wasm-bindgen 导出）
+/// T-4.2: 浏览器版 Aether Agent（wasm-bindgen 导出）。
+/// 当前实现: 直接 web_sys::fetch 调 LLM API（未接入 agent-core ReAct 循环）。
+/// TODO: 抽 HttpClient trait → agent-wasm 真接入 AIAgent。
+#[wasm_bindgen]
 #[wasm_bindgen]
 pub struct AetherWasm {
     provider: String,

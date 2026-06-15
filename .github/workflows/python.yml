@@ -1,0 +1,28 @@
+# T-4.6: Python SDK CI — cibuildwheel 打包 wheel
+name: Python
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - uses: dtolnay/rust-toolchain@stable
+      - name: Install maturin
+        run: pip install maturin
+      - name: Build wheel
+        run: cd sdks/python && maturin build --release
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: sdks/python/target/wheels/*.whl
