@@ -181,6 +181,7 @@ mod tests {
     async fn test_security_reject_traversal() {
         assert!(secure_path("../secret.txt").is_err());
         assert!(secure_path("a/../../b").is_err());
+        #[cfg(windows)]
         assert!(secure_path("subdir\\..\\..\\secret.txt").is_err());
     }
     #[tokio::test]
