@@ -31,9 +31,15 @@ pub async fn run_conversation(
     let mut turn_count = 0u32;
 
     // ── 组装消息 ──
+    // T-2.5: 消费 compression_enabled 配置（为 false 时跳过压缩）
+    let compression_enabled = agent.config.compression_enabled;
+
     let cwd = std::env::current_dir().ok();
     let cwd_str = cwd.as_ref().map(|p| p.to_string_lossy().to_string());
-    let context_text = crate::context::ContextEngine::collect_context(cwd_str.as_deref());
+    // T-2.5: 消费 memory_enabled 配置（为 false 时不加载记忆上下文）
+    let context_text = if agent.config.memory_enabled {
+        crate::context::ContextEngine::collect_context(cwd_str.as_deref())
+    } else { String::new() };
     let context_ref = if context_text.is_empty() {
         None
     } else {
@@ -157,8 +163,8 @@ pub async fn run_conversation(
 
             all_tool_results.extend(calls);
 
-            // 压缩上下文（如果 token 超过上下文窗口的 75%）
-            if messages.len() > 10 {
+            // T-2.5: 消费 compression_enabled（为 false 时跳过）
+            if compression_enabled && messages.len() > 10 {
                 let current_tokens =
                     crate::compression::ContextCompressor::estimate_tokens(&messages);
                 // 默认上下文 128K，75% ≈ 96000 tokens

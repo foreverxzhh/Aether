@@ -91,8 +91,9 @@ impl Tool for SshTerminal {
 }
 
 /// 代码执行沙箱
-/// T-4.1: 默认在宿主执行(python/node/sh)。生产环境建议 Docker(--network=none)
-/// 移动端不可用。README应注明 "ExecuteCode: desktop only, unsafe in production"
+/// T-4.1: 支持 host(默认)和 docker 两种后端。
+/// Docker 模式: --network=none --memory=256m --read-only --tmpfs=/tmp:64m
+/// 生产环境推荐 Docker。移动端不可用。
 pub struct ExecuteCode;
 #[async_trait]
 impl Tool for ExecuteCode {
@@ -106,30 +107,27 @@ impl Tool for ExecuteCode {
         json!({"type":"object","properties":{
             "language":{"type":"string","enum":["python","javascript","shell"]},
             "code":{"type":"string","description":"代码内容"},
-            "timeout":{"type":"number","description":"超时秒数(默认10)"}
+            "timeout":{"type":"number","description":"超时秒数(默认10)"},
+            "backend":{"type":"string","enum":["host","docker"],"description":"执行后端(默认host; docker需daemon)"}
         },"required":["language","code"]})
     }
     async fn call(&self, args: Value) -> Result<String, AetherError> {
-        let lang = args
-            .get("language")
-            .and_then(|v| v.as_str())
-            .ok_or(AetherError::ToolInvalidArgs("缺少 language 参数".into()))?;
-        let code = args
-            .get("code")
-            .and_then(|v| v.as_str())
-            .ok_or(AetherError::ToolInvalidArgs("缺少 code 参数".into()))?;
+        let lang = args.get("language").and_then(|v| v.as_str()).ok_or(AetherError::ToolInvalidArgs("缺少 language 参数".into()))?;
+        let code = args.get("code").and_then(|v| v.as_str()).ok_or(AetherError::ToolInvalidArgs("缺少 code 参数".into()))?;
         let timeout_secs = args.get("timeout").and_then(|v| v.as_u64()).unwrap_or(10);
+        let backend = args.get("backend").and_then(|v| v.as_str()).unwrap_or("host");
 
+        // T-4.1: Docker backend 支持
+        if backend == "docker" {
+            return Self::run_docker(lang, code, timeout_secs).await;
+        }
+
+        // Host backend (默认)
         let (interpreter, arg) = match lang {
             "python" => ("python", "-c"),
             "javascript" => ("node", "-e"),
             "shell" => ("sh", "-c"),
-            _ => {
-                return Err(AetherError::ToolInvalidArgs(format!(
-                    "不支持的语言: {}",
-                    lang
-                )))
-            }
+            _ => return Err(AetherError::ToolInvalidArgs(format!("不支持的语言: {}", lang))),
         };
 
         let output = tokio::time::timeout(
@@ -149,5 +147,23 @@ impl Tool for ExecuteCode {
             "exit_code": output.status.code().unwrap_or(-1),
         })
         .to_string())
+    }
+}
+
+impl ExecuteCode {
+    /// T-4.1: Docker 隔离执行
+    async fn run_docker(lang: &str, code: &str, timeout_secs: u64) -> Result<String, AetherError> {
+        let image = match lang { "python" => "python:3-slim", "javascript" => "node:alpine", _ => "alpine:latest" };
+        let runner = match lang { "python" => "python3 -c", "javascript" => "node -e", _ => "/bin/sh -c" };
+        let cmd = format!("{} {}", runner, format!("'{}'", code.replace('\'', "'\''")));
+        let output = tokio::time::timeout(
+            std::time::Duration::from_secs(timeout_secs),
+            tokio::process::Command::new("docker")
+                .args(["run", "--rm", "--network=none", "--memory=256m", "--cpus=1",
+                       "--read-only", "--tmpfs=/tmp:size=64m", image, "/bin/sh", "-c", &cmd])
+                .output(),
+        ).await.map_err(|_| AetherError::ToolExecutionError("Docker超时".into()))?
+         .map_err(|e| AetherError::ToolExecutionError(format!("Docker: {}", e)))?;
+        Ok(serde_json::json!({"stdout":String::from_utf8_lossy(&output.stdout),"stderr":String::from_utf8_lossy(&output.stderr),"exit_code":output.status.code().unwrap_or(-1),"backend":"docker"}).to_string())
     }
 }

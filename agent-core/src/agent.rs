@@ -181,8 +181,15 @@ impl AIAgent {
     }
 
     /// 获取当前 profile 的 HERMES_HOME 路径
+    /// T-2.8: 消费 config.profile，按 profile 隔离 session/skills/memory
     pub fn hermes_home(&self) -> std::path::PathBuf {
-        crate::profile::ProfileManager::new(self.config.profile.clone()).home()
+        let pm = crate::profile::ProfileManager::new(self.config.profile.clone());
+        let home = pm.home();
+        // 确保 per-profile 目录存在
+        std::fs::create_dir_all(&home).ok();
+        std::fs::create_dir_all(home.join("skills")).ok();
+        std::fs::create_dir_all(home.join("memory")).ok();
+        home
     }
 
     pub fn provider_name(&self) -> &str {

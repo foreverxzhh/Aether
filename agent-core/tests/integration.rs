@@ -199,7 +199,7 @@ fn test_compression_estimator() {
 #[test]
 fn test_profile_manager() {
     use agent_core::profile::ProfileManager;
-    let pm = ProfileManager::new();
+    let pm = ProfileManager::new(None);
     let profiles = pm.list_profiles().unwrap();
     assert!(profiles.contains(&"default".to_string()));
 }
