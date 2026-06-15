@@ -171,11 +171,12 @@ pub async fn run_conversation(
                             info!(
                                 original = result.original_message_count,
                                 compressed = result.compressed_count,
-                                "压缩完成"
+                                "压缩完成 — 替换对话历史"
                             );
-                            // 释放一次预算作为补偿
-                            // Note: 实际截断消息在外部循环进行
-                            // 当前简化：仅记录日志，后续迭代不会继续增长
+                            // T-2.2: 真正替换消息
+                            messages = result.compressed_messages;
+                            // 退还一次迭代预算作为补偿
+                            budget.refund();
                         }
                         Err(e) => warn!(error = %e, "压缩失败"),
                     }

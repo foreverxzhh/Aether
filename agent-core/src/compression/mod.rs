@@ -3,6 +3,7 @@ use crate::types::message::{Content, Message, MessageRole};
 
 /// 上下文压缩结果
 pub struct CompressionResult {
+    pub compressed_messages: Vec<Message>,
     pub compressed_count: u32,
     pub summary: String,
     pub child_session_id: String,
@@ -99,8 +100,11 @@ impl ContextCompressor {
         }
         compressed.extend_from_slice(tail);
 
+        // T-2.2: 真消费压缩输出
+        let compressed_count = compressed.len() as u32;
         Ok(CompressionResult {
-            compressed_count: compressed.len() as u32,
+            compressed_messages: compressed,
+            compressed_count,
             summary,
             child_session_id: uuid::Uuid::new_v4().to_string(),
             original_message_count: messages.len(),
