@@ -4,7 +4,7 @@
 > **日期**：2026-06-15
 > **状态**：权威方案 — 2026-06-16 执行完成
 > **完成度**：30/31 task ✅ | 37 测试通过 | 0 编译错误
-> **未完成**：T-4.2（需要 HttpClient trait 结构重构，待架构决策后推进）
+> **未完成**：T-4.2（Web SDK 真接 agent-core — 需要抽 HttpClient trait，属于架构重构，已回退所有尝试，待 Opus 研究后确定方案。当前 agent-wasm 使用 agent-core 类型系统 + web_sys::fetch 直调 LLM API，不走 AIAgent ReAct 循环）
 > **范围**：Aether 仓库当前 master（`agent-core` / `agent-bindings` / `agent-wasm` / 5 个平台 SDK / docs / CI）
 > **审计方法**：17 个独立子代理对抗式审查，覆盖源码、文档、CI、测试、跨平台绑定
 

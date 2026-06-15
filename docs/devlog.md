@@ -254,3 +254,12 @@ P3 (R17-R21): Profile 集成 + Curator 定时 + macOS SwiftPM + Python SDK + CI 
 未完成: T-4.2 (Web SDK真接agent-core，需抽HttpClient trait)
 
 最终: 30/31 task ✅ | 37测试 | 0编译错误
+
+## 2026-06-16 — T-4.2 回退，FIX_PLAN 完成度 30/31
+
+T-4.2 (Web SDK 真接 agent-core):
+- 尝试 1: ChatModel trait unbundling → Send 边界问题（WASM 不支持 Send）
+- 尝试 2: 直接注入 AIAgent → tokio 依赖不可移除
+- 结论: 需要 HttpClient trait 抽取 → 架构级重构 → 回退保留至 Opus 研究
+
+最终状态: 30/31 ✅, 37测试, 0编译错误
