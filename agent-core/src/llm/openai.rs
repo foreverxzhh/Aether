@@ -226,7 +226,7 @@ impl ChatModel for OpenAIProvider {
             return Err(AetherError::LlmError(format!(
                 "API 错误 ({}): {}",
                 status.as_u16(),
-                &text[..text.len().min(200)]
+                &text.chars().take(200).collect::<String>()
             )));
         }
 
@@ -258,7 +258,7 @@ impl ChatModel for OpenAIProvider {
             return Err(AetherError::LlmError(format!(
                 "流式 API 错误 ({}): {}",
                 status.as_u16(),
-                &text[..text.len().min(200)]
+                &text.chars().take(200).collect::<String>()
             )));
         }
 

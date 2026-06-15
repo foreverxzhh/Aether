@@ -200,8 +200,11 @@ fn test_session_schema_compat() {
     let store = agent_core::memory::state::SqliteSessionStore::new(&temp_db);
     let _ = std::fs::remove_file(&temp_db);
 
-    // 只要能创建不报错就是兼容
-    assert!(store.is_ok() || true, "SQLite schema 创建不应 panic");
+    // T-2.9: 删除恒真断言。验证真正创建成功
+    match store {
+        Ok(_) => {}
+        Err(e) => panic!("SQLite schema 创建失败: {}", e),
+    }
 }
 
 #[test]

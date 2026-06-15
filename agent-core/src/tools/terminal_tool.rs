@@ -64,9 +64,15 @@ impl Tool for Terminal {
 
         let timeout_secs = args.get("timeout").and_then(|v| v.as_u64()).unwrap_or(30);
 
+        // T-2.1: Cross-platform shell invocation
+        let (shell, shell_arg) = if cfg!(windows) {
+            ("cmd", "/C")
+        } else {
+            ("sh", "-c")
+        };
         let output = timeout(Duration::from_secs(timeout_secs), async {
-            Command::new("cmd")
-                .args(["/C", command])
+            Command::new(shell)
+                .args([shell_arg, command])
                 .stdout(Stdio::piped())
                 .stderr(Stdio::piped())
                 .output()
