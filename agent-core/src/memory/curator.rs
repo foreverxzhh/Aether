@@ -129,6 +129,17 @@ pub fn start_curator_timer(skills_dir: std::path::PathBuf, config: CuratorConfig
     });
 }
 
+/// T-3.5: Inline curator check — 每次 chat 结束顺手判一下是否到期。
+/// 不引入后台守护线程（跨平台 + SDK 形态友好）。
+pub fn maybe_run_inline(skills_dir: &Path, config: &CuratorConfig) {
+    if should_run(skills_dir, config) {
+        match run_curator(skills_dir, config) {
+            Ok(report) => tracing::info!(?report, "Curator 已运行"),
+            Err(e) => tracing::warn!(%e, "Curator 运行失败"),
+        }
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct CuratorReport {
     pub active: u64,

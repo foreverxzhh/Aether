@@ -170,6 +170,13 @@ impl AIAgent {
             }
         });
 
+        // T-3.5: Curator inline check — chat 结束时检查是否需要运行
+        let skills_dir = self.hermes_home().join("skills");
+        crate::memory::curator::maybe_run_inline(
+            &skills_dir,
+            &crate::memory::curator::CuratorConfig::default(),
+        );
+
         Ok(result)
     }
 

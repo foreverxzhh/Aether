@@ -109,8 +109,11 @@ pub async fn review_and_learn(
                 std::fs::create_dir_all(&skills_dir).ok();
                 let ts = chrono::Local::now().format("%Y%m%d_%H%M%S");
                 let skill_path = skills_dir.join(format!("learned_{}.md", ts));
+                // T-3.4: 修复skill命名碰撞 — 每个技能用唯一时间戳命名
+                let skill_name = format!("review-{}", ts);
                 let content = format!(
-                    "---\nname: auto-learned-skill\ndescription: 自动从对话学到的技能\nauthor: Aether\n---\n\n{}", text
+                    "---\nname: {}\ndescription: 自动从对话学到的技能\nauthor: Aether\n---\n\n{}",
+                    skill_name, text
                 );
                 std::fs::write(&skill_path, &content).ok();
             }
