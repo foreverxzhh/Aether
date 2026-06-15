@@ -1,6 +1,6 @@
 use std::path::Path;
 
-/// 上下文引擎：收集当前工作目录的相关信息注入 prompt
+/// 上下文引擎（T-2.7: 当前是启动时快照。TODO: 每迭代刷新+真env注入）
 pub struct ContextEngine;
 
 impl ContextEngine {

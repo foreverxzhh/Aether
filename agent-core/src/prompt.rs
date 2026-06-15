@@ -1,7 +1,8 @@
 use crate::types::message::Message;
 use chrono::Local;
 
-/// 系统提示词组装器（三层结构）
+/// 系统提示词组装器
+/// T-2.7: 当前为单层拼接。TODO: 真三层(session稳定+每turn刷新+按需注入)
 pub struct PromptBuilder;
 
 impl PromptBuilder {
