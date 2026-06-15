@@ -90,7 +90,9 @@ impl Tool for SshTerminal {
     }
 }
 
-/// 代码执行沙箱（本地隔离进程）
+/// 代码执行沙箱
+/// T-4.1: 默认在宿主执行(python/node/sh)。生产环境建议 Docker(--network=none)
+/// 移动端不可用。README应注明 "ExecuteCode: desktop only, unsafe in production"
 pub struct ExecuteCode;
 #[async_trait]
 impl Tool for ExecuteCode {

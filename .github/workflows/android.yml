@@ -1,0 +1,28 @@
+# T-4.3: Android SDK CI — NDK 交叉编译 + Gradle 打包
+name: Android
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-linux-android,armv7-linux-androideabi
+      - uses: nttld/setup-ndk@v1
+        with:
+          ndk-version: r27
+      - name: 交叉编译 agent-bindings
+        run: |
+          cargo build -p agent-bindings --target aarch64-linux-android --release --no-default-features
+        env:
+          CC_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+      - uses: actions/upload-artifact@v4
+        with:
+          name: android-so
+          path: target/aarch64-linux-android/release/libagent_bindings.so

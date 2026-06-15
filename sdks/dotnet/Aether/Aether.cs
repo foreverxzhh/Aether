@@ -84,7 +84,8 @@ namespace Aether
             IntPtr resultPtr = aether_chat(_handle, message);
             try
             {
-                string json = Marshal.PtrToStringAnsi(resultPtr) ?? "{}";
+                // T-4.5: 用 UTF-8 读取（非 Ansi），否则中文回复乱码
+                string json = PtrToUtf8(resultPtr) ?? "{}";
                 var doc = JsonDocument.Parse(json);
                 var root = doc.RootElement;
 
@@ -114,6 +115,17 @@ namespace Aether
                 _handle = IntPtr.Zero;
             }
             GC.SuppressFinalize(this);
+        }
+
+        /// T-4.5: 正确读取 UTF-8 字符串（Marshal.PtrToStringAnsi 会乱码）
+        private static string? PtrToUtf8(IntPtr ptr)
+        {
+            if (ptr == IntPtr.Zero) return null;
+            int len = 0;
+            while (Marshal.ReadByte(ptr, len) != 0) len++;
+            var bytes = new byte[len];
+            Marshal.Copy(ptr, bytes, 0, len);
+            return System.Text.Encoding.UTF8.GetString(bytes);
         }
 
         ~AetherAgent() => Dispose();

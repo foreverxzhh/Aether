@@ -1,0 +1,22 @@
+# T-4.4: iOS SDK CI — macOS runner + xcodebuild + XCFramework
+name: iOS
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-ios
+      - name: 交叉编译 iOS
+        run: cargo build -p agent-bindings --target aarch64-apple-ios --release --no-default-features
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ios-lib
+          path: target/aarch64-apple-ios/release/libagent_bindings.a
