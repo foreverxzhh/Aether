@@ -256,14 +256,143 @@ impl ChatModel for AnthropicProvider {
 
     async fn stream(
         &self,
-        _messages: &[Message],
-        _tools: &[Value],
+        messages: &[Message],
+        tools: &[Value],
     ) -> Result<Box<dyn Streamable>, AetherError> {
-        Err(AetherError::UnsupportedApiMode(
-            "Anthropic 流式尚未实现".to_string(),
-        ))
+        let mut body = self.build_request(messages, tools);
+        body["stream"] = serde_json::json!(true);
+        let url = self.messages_url();
+
+        let response = self
+            .client
+            .post(&url)
+            .header("x-api-key", &self.api_key)
+            .header("anthropic-version", "2023-06-01")
+            .header("Content-Type", "application/json")
+            .json(&body)
+            .send()
+            .await
+            .map_err(|e| AetherError::LlmError(format!("Anthropic 流式请求失败: {}", e)))?;
+
+        let status = response.status();
+        if !status.is_success() {
+            let text = response.text().await.unwrap_or_default();
+            return Err(AetherError::LlmError(format!(
+                "Anthropic 流式 API 错误 ({}): {}",
+                status.as_u16(),
+                &text.chars().take(200).collect::<String>()
+            )));
+        }
+
+        Ok(Box::new(AnthropicStream {
+            response,
+            buffer: String::new(),
+            done: false,
+            pending_calls: std::collections::HashMap::new(),
+        }))
     }
 }
+
+// ── T-3.2: Anthropic SSE 流式解析 ──
+
+use std::collections::HashMap;
+
+pub struct AnthropicStream {
+    response: reqwest::Response,
+    buffer: String,
+    done: bool,
+    pending_calls: HashMap<String, PendingAnthropicTool>,
+}
+
+#[derive(Default)]
+struct PendingAnthropicTool {
+    name: String,
+    input: String,  // 累积 partial_json
+}
+
+#[async_trait]
+impl Streamable for AnthropicStream {
+    async fn next_chunk(&mut self) -> Result<Option<crate::types::model::StreamChunk>, AetherError> {
+        if self.done { return Ok(None); }
+
+        use futures::StreamExt;
+        while let Some(bytes) = self.response.chunk().await.map_err(|e| {
+            AetherError::LlmError(format!("Anthropic流式读取失败: {}", e))
+        })? {
+            self.buffer.push_str(&String::from_utf8_lossy(&bytes));
+            if let Some(chunk) = self.parse_buffer() {
+                return Ok(chunk);
+            }
+        }
+        self.done = true;
+        Ok(self.parse_buffer().flatten())
+    }
+}
+
+impl AnthropicStream {
+    fn parse_buffer(&mut self) -> Option<Option<crate::types::model::StreamChunk>> {
+        loop {
+            let end = self.buffer.find('\n')?;
+            let line = self.buffer[..end].trim().to_string();
+            self.buffer = self.buffer[end + 1..].to_string();
+            if line.is_empty() || line.starts_with(':') { continue; }
+
+            if let Some(data) = line.strip_prefix("data: ") {
+                if let Ok(event) = serde_json::from_str::<serde_json::Value>(data) {
+                    let event_type = event["type"].as_str().unwrap_or("");
+                    match event_type {
+                        "content_block_delta" => {
+                            let delta = &event["delta"];
+                            if delta["type"] == "text_delta" {
+                                return Some(Some(crate::types::model::StreamChunk {
+                                    delta: delta["text"].as_str().unwrap_or("").to_string(),
+                                    tool_calls: None, finish_reason: None, usage: None,
+                                }));
+                            } else if delta["type"] == "input_json_delta" {
+                                let idx = event["index"].as_u64().map(|i| i.to_string()).unwrap_or_default();
+                                let p = self.pending_calls.entry(idx).or_default();
+                                p.input.push_str(delta["partial_json"].as_str().unwrap_or(""));
+                            }
+                        }
+                        "content_block_start" => {
+                            let block = &event["content_block"];
+                            if block["type"] == "tool_use" {
+                                let idx = event["index"].as_u64().map(|i| i.to_string()).unwrap_or_default();
+                                let p = self.pending_calls.entry(idx).or_default();
+                                p.name = block["name"].as_str().unwrap_or("").to_string();
+                            }
+                        }
+                        "message_delta" => {
+                            let stop_reason = event["delta"]["stop_reason"].as_str().unwrap_or("");
+                            let finish = match stop_reason {
+                                "end_turn" => Some(crate::types::model::FinishReason::Stop),
+                                "tool_use" => Some(crate::types::model::FinishReason::ToolCalls),
+                                "max_tokens" => Some(crate::types::model::FinishReason::Length),
+                                _ => None,
+                            };
+                            // 输出累积的 tool_calls
+                            let tc_out: Vec<_> = self.pending_calls.drain().map(|(idx, p)| {
+                                crate::types::model::ToolCallInfo {
+                                    id: format!("toolu_{}", idx),
+                                    name: p.name.clone(),
+                                    arguments: p.input.clone(),
+                                }
+                            }).collect();
+                            let tc = if tc_out.is_empty() { None } else { Some(tc_out) };
+                            return Some(Some(crate::types::model::StreamChunk {
+                                delta: String::new(), tool_calls: tc, finish_reason: finish, usage: None,
+                            }));
+                        }
+                        "message_stop" => { self.done = true; return Some(None); }
+                        _ => {}
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ── Anthropic API 响应格式 ──
 
 // ── Anthropic API 响应格式 ──
 

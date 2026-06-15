@@ -7,6 +7,21 @@ use serde_json::{json, Value};
 /// 记忆工具（读写 L1-L2 记忆）
 pub struct Memory;
 
+/// T-3.9: 脱敏 secret + 去重
+fn redact_secrets(s: &str) -> String {
+    let re = regex::Regex::new(r"(sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,})").unwrap();
+    re.replace_all(s, "<redacted-secret>").to_string()
+}
+
+/// T-3.9: 去重检查（最近几行已存在则跳过写入）
+fn is_duplicate(existing: &str, new_line: &str) -> bool {
+    let trimmed = new_line.trim();
+    if trimmed.is_empty() { return true; }
+    existing.lines().any(|l| l.trim() == trimmed)
+}
+
+const MEMORY_MAX_BYTES: usize = 64 * 1024; // T-3.9: 限制记忆文件大小
+
 #[async_trait]
 impl Tool for Memory {
     fn name(&self) -> &str {
@@ -59,13 +74,30 @@ impl Tool for Memory {
                 )?;
                 if key == "memory" || key == "all" {
                     let core = CoreMemory::new(&hermes_home);
-                    let existing = core.read().unwrap_or_default();
-                    core.write(&format!("{}\n- {}\n", existing, value))?;
+                    let mut existing = core.read().unwrap_or_default();
+                    let safe_value = redact_secrets(value);
+                    if !is_duplicate(&existing, &safe_value) {
+                        let new_line = format!("- {}", safe_value);
+                        existing.push_str(&new_line);
+                        existing.push('\n');
+                        // T-3.9: 截断过大文件
+                        if existing.len() > MEMORY_MAX_BYTES {
+                            existing = existing[existing.len() - MEMORY_MAX_BYTES..].to_string();
+                        }
+                        core.write(&existing)?;
+                    }
                 }
                 if key == "profile" || key == "all" {
                     let profile = UserProfile::new(&hermes_home);
-                    let existing = profile.read().unwrap_or_default();
-                    profile.write(&format!("{}\n- {}\n", existing, value))?;
+                    let mut existing = profile.read().unwrap_or_default();
+                    let safe_value = redact_secrets(value);
+                    if !is_duplicate(&existing, &safe_value) {
+                        existing.push_str(&format!("- {}\n", safe_value));
+                        if existing.len() > MEMORY_MAX_BYTES {
+                            existing = existing[existing.len() - MEMORY_MAX_BYTES..].to_string();
+                        }
+                        profile.write(&existing)?;
+                    }
                 }
                 json!({"success": true})
             }
