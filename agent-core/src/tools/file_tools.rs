@@ -4,20 +4,23 @@ use async_trait::async_trait;
 use serde_json::{json, Value};
 use similar::TextDiff;
 
-/// 路径安全检查：防止目录穿越
+/// T-3.7: 路径安全检查 — canonicalize 解析符号链接 + 白名单根目录
 fn secure_path(path: &str) -> Result<std::path::PathBuf, AetherError> {
     let p = std::path::Path::new(path);
-    // 禁止绝对路径（如 /etc/passwd）
     if p.is_absolute() {
         return Err(AetherError::ToolExecutionError("不允许使用绝对路径".into()));
     }
-    // 规范化路径，检查是否包含 ../
-    let canonical = std::path::PathBuf::from(path);
-    if canonical
-        .components()
-        .any(|c| c == std::path::Component::ParentDir)
-    {
+    if p.components().any(|c| c == std::path::Component::ParentDir) {
         return Err(AetherError::ToolExecutionError("不允许目录穿越路径".into()));
+    }
+    // canonicalize 解析符号链接
+    let cwd = std::env::current_dir().map_err(|e| AetherError::IoError(e.to_string()))?;
+    let absolute = cwd.join(p);
+    let canonical = std::fs::canonicalize(&absolute)
+        .unwrap_or_else(|_| absolute.clone()); // fallback if file doesn't exist yet
+    // 确保解析后仍在当前工作目录内
+    if !canonical.starts_with(&cwd) {
+        return Err(AetherError::ToolExecutionError("路径越权访问".into()));
     }
     Ok(canonical)
 }

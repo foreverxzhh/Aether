@@ -202,19 +202,47 @@ impl AIAgent {
             .as_ref()
             .ok_or_else(|| AetherError::ConfigError("模型未初始化".into()))?;
         let system_msg = crate::prompt::PromptBuilder::build_system_message(
-            self.config.system_prompt.as_deref(),
-            None,
-            None,
+            self.config.system_prompt.as_deref(), None, None,
         );
         let user_msg = crate::types::message::Message::user(message);
-        let messages = vec![system_msg, user_msg];
+        let mut messages = vec![system_msg, user_msg];
         let tools = self.get_tool_definitions();
-        let mut stream = model.stream(&messages, &tools).await?;
-        let mut full_response = String::new();
-        while let Some(chunk) = stream.next_chunk().await? {
-            full_response.push_str(&chunk.delta);
-            callback(chunk);
+
+        // T-3.3: ReAct 循环在流式模式下
+        loop {
+            let mut stream = model.stream(&messages, &tools).await?;
+            let mut full_response = String::new();
+            let mut tool_calls: Vec<crate::types::model::ToolCallInfo> = Vec::new();
+
+            while let Some(chunk) = stream.next_chunk().await? {
+                if !chunk.delta.is_empty() {
+                    full_response.push_str(&chunk.delta);
+                }
+                if let Some(tcs) = &chunk.tool_calls {
+                    tool_calls.extend(tcs.clone());
+                }
+                callback(chunk.clone());
+                if chunk.finish_reason.is_some() {
+                    break;
+                }
+            }
+
+            if tool_calls.is_empty() {
+                return Ok(full_response);
+            }
+
+            // 执行工具后继续循环
+            for tc in &tool_calls {
+                let args = serde_json::from_str(&tc.arguments).unwrap_or_default();
+                match self.execute_tool(&tc.name, args).await {
+                    Ok(result) => {
+                        messages.push(crate::types::message::Message::tool_result(&tc.id, &result));
+                    }
+                    Err(e) => {
+                        messages.push(crate::types::message::Message::tool_result(&tc.id, &format!("错误: {}", e)));
+                    }
+                }
+            }
         }
-        Ok(full_response)
     }
 }
