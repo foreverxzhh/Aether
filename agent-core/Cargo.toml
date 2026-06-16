@@ -18,6 +18,10 @@ async-trait = "0.1"
 thiserror = "2"
 chrono = { version = "0.4", features = ["serde"] }
 regex = "1"
+# T-3.9: 防止 api_key 通过 Debug/Display 泄漏
+secrecy = { version = "0.8", features = ["serde"] }
+# v2: 严格 URL 解析（SSRF 防御）。reqwest 已经传递依赖 url，这里显式声明便于使用 API。
+url = "2"
 
 # 原生平台依赖
 tokio = { version = "1", features = ["full"], optional = true }

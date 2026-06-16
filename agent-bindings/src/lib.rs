@@ -22,6 +22,8 @@ pub fn create_agent(provider: &str, model: &str, api_key: Option<&str>) -> AIAge
     let mut config = AgentConfig::default();
     config.provider = provider.to_string();
     config.model = model.to_string();
-    config.api_key = api_key.map(|s| s.to_string());
+    if let Some(k) = api_key {
+        config.set_api_key(k);
+    }
     AIAgent::new(config)
 }

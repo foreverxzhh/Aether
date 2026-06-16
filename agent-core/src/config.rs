@@ -1,3 +1,4 @@
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 
 /// Agent 配置（通过 `AgentConfigBuilder` 构建）
@@ -14,15 +15,21 @@ use serde::{Deserialize, Serialize};
 ///     .system_prompt("你是一个助手")
 ///     .build();
 /// ```
-#[derive(Debug, Clone, Serialize, Deserialize)]
+///
+/// T-3.9: `api_key` 用 `secrecy::SecretString` 持有，
+/// `Debug` 印出 `<redacted>`，序列化时跳过。
+#[derive(Clone, Serialize, Deserialize)]
 pub struct AgentConfig {
     /// LLM 供应商名称 (`openai` / `anthropic` / `deepseek` / `ollama`)
     pub provider: String,
     /// 模型名称 (如 `gpt-4o`, `claude-sonnet-4-6`, `deepseek-v4-flash`)
     pub model: String,
     /// API Key（也可通过环境变量 `{PROVIDER}_API_KEY` 设置）
-    #[serde(skip_serializing)]
-    pub api_key: Option<String>,
+    ///
+    /// T-3.9: 用 SecretString 包裹，避免通过 Debug / JSON 序列化泄漏。
+    /// 读取请走 [`AgentConfig::api_key_expose`]。
+    #[serde(skip)]
+    api_key: Option<SecretString>,
     /// 自定义 API 地址（OpenAI 兼容协议时使用）
     pub base_url: Option<String>,
     /// 系统提示词
@@ -59,6 +66,61 @@ pub struct AgentConfig {
     pub profile: Option<String>,
     /// 日志级别
     pub log_level: String,
+}
+
+impl AgentConfig {
+    /// 设置 / 替换 api_key（接受任意 `Into<String>`）。
+    pub fn set_api_key(&mut self, key: impl Into<String>) {
+        self.api_key = Some(SecretString::new(key.into()));
+    }
+
+    /// 清空 api_key。
+    pub fn clear_api_key(&mut self) {
+        self.api_key = None;
+    }
+
+    /// 获取 api_key 的明文副本，仅在真正需要发送 HTTP 时使用。
+    pub fn api_key_expose(&self) -> Option<String> {
+        self.api_key
+            .as_ref()
+            .map(|s| s.expose_secret().to_string())
+    }
+
+    /// 检查是否已配置 api_key（不暴露内容）。
+    pub fn has_api_key(&self) -> bool {
+        self.api_key.is_some()
+    }
+}
+
+impl std::fmt::Debug for AgentConfig {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AgentConfig")
+            .field("provider", &self.provider)
+            .field("model", &self.model)
+            .field(
+                "api_key",
+                &self.api_key.as_ref().map(|_| "<redacted>"),
+            )
+            .field("base_url", &self.base_url)
+            .field("system_prompt", &self.system_prompt)
+            .field("max_iterations", &self.max_iterations)
+            .field("temperature", &self.temperature)
+            .field("max_tokens", &self.max_tokens)
+            .field("enabled_toolsets", &self.enabled_toolsets)
+            .field("disabled_toolsets", &self.disabled_toolsets)
+            .field("memory_enabled", &self.memory_enabled)
+            .field("memory_provider", &self.memory_provider)
+            .field("compression_enabled", &self.compression_enabled)
+            .field("compression_threshold_ratio", &self.compression_threshold_ratio)
+            .field("skills_enabled", &self.skills_enabled)
+            .field("delegation_enabled", &self.delegation_enabled)
+            .field("max_concurrent_children", &self.max_concurrent_children)
+            .field("max_spawn_depth", &self.max_spawn_depth)
+            .field("session_id", &self.session_id)
+            .field("profile", &self.profile)
+            .field("log_level", &self.log_level)
+            .finish()
+    }
 }
 
 impl Default for AgentConfig {
@@ -135,8 +197,10 @@ impl AgentConfigBuilder {
     ///
     /// 也可通过环境变量设置（如 `DEEPSEEK_API_KEY`），
     /// CLI 工具会自动读取。
+    ///
+    /// T-3.9: 内部用 `SecretString` 持有，不会通过 Debug / 序列化泄漏。
     pub fn api_key(mut self, key: impl Into<String>) -> Self {
-        self.config.api_key = Some(key.into());
+        self.config.set_api_key(key);
         self
     }
 

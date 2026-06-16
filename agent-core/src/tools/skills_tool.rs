@@ -4,13 +4,26 @@ use crate::memory::core::default_hermes_home;
 use crate::skills::FileSkillStore;
 use async_trait::async_trait;
 use serde_json::{json, Value};
+use std::path::PathBuf;
 
-fn skills_dir() -> std::path::PathBuf {
-    default_hermes_home().join("skills")
+/// T-1.4: profile-aware skills dir 解析
+fn resolve_skills_dir(profile_home: Option<&PathBuf>) -> PathBuf {
+    profile_home
+        .cloned()
+        .unwrap_or_else(default_hermes_home)
+        .join("skills")
 }
 
 /// 技能列表
-pub struct SkillsList;
+pub struct SkillsList {
+    profile_home: Option<PathBuf>,
+}
+
+impl SkillsList {
+    pub fn new(profile_home: Option<PathBuf>) -> Self {
+        Self { profile_home }
+    }
+}
 
 #[async_trait]
 impl Tool for SkillsList {
@@ -26,7 +39,7 @@ impl Tool for SkillsList {
         }})
     }
     async fn call(&self, _args: Value) -> Result<String, AetherError> {
-        let dir = skills_dir();
+        let dir = resolve_skills_dir(self.profile_home.as_ref());
         if !dir.exists() {
             return Ok(json!({"skills": [], "count": 0}).to_string());
         }
@@ -53,7 +66,15 @@ impl Tool for SkillsList {
 }
 
 /// 查看技能详情
-pub struct SkillView;
+pub struct SkillView {
+    profile_home: Option<PathBuf>,
+}
+
+impl SkillView {
+    pub fn new(profile_home: Option<PathBuf>) -> Self {
+        Self { profile_home }
+    }
+}
 
 #[async_trait]
 impl Tool for SkillView {
@@ -78,9 +99,10 @@ impl Tool for SkillView {
             .and_then(|v| v.as_str())
             .ok_or(AetherError::ToolInvalidArgs("缺少 name 参数".into()))?;
 
-        let path = skills_dir().join(format!("{}.md", name));
+        let dir = resolve_skills_dir(self.profile_home.as_ref());
+        let path = dir.join(format!("{}.md", name));
         if !path.exists() {
-            let path2 = skills_dir().join(name);
+            let path2 = dir.join(name);
             if !path2.exists() {
                 return Ok(json!({"error": format!("技能 '{}' 未找到", name)}).to_string());
             }
@@ -93,7 +115,15 @@ impl Tool for SkillView {
 }
 
 /// 技能管理
-pub struct SkillManage;
+pub struct SkillManage {
+    profile_home: Option<PathBuf>,
+}
+
+impl SkillManage {
+    pub fn new(profile_home: Option<PathBuf>) -> Self {
+        Self { profile_home }
+    }
+}
 
 #[async_trait]
 impl Tool for SkillManage {
@@ -124,19 +154,19 @@ impl Tool for SkillManage {
             .and_then(|v| v.as_str())
             .ok_or(AetherError::ToolInvalidArgs("缺少 name 参数".into()))?;
 
+        let dir = resolve_skills_dir(self.profile_home.as_ref());
         match action {
             "create" | "update" => {
                 let content = args.get("content").and_then(|v| v.as_str()).ok_or(
                     AetherError::ToolInvalidArgs("create/update 需要 content 参数".into()),
                 )?;
-                let dir = skills_dir();
                 std::fs::create_dir_all(&dir).map_err(|e| AetherError::IoError(e.to_string()))?;
                 std::fs::write(dir.join(format!("{}.md", name)), content)
                     .map_err(|e| AetherError::IoError(e.to_string()))?;
                 Ok(json!({"success": true, "action": action, "name": name}).to_string())
             }
             "delete" => {
-                let path = skills_dir().join(format!("{}.md", name));
+                let path = dir.join(format!("{}.md", name));
                 if path.exists() {
                     std::fs::remove_file(&path).map_err(|e| AetherError::IoError(e.to_string()))?;
                 }

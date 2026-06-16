@@ -263,3 +263,64 @@ T-4.2 (Web SDK 真接 agent-core):
 - 结论: 需要 HttpClient trait 抽取 → 架构级重构 → 回退保留至 Opus 研究
 
 最终状态: 30/31 ✅, 37测试, 0编译错误
+
+## 2026-06-16 — v0.3 → v0.4 hidden regression fixes
+
+针对 v0.3→v0.4 审计中发现的隐性回退做最小修复（无 cargo 验证，纯 Read 复核）。
+
+### 修复列表
+
+- **T-2.4 MCP stdio call_tool 真实现** (`agent-core/src/mcp/mod.rs`)
+  - 引入 `McpStdioServer`：`tokio::process::Child` + `Mutex<ChildStdin>` + 后台 reader 任务
+  - `AtomicU64` 分配 JSON-RPC id，`Mutex<HashMap<u64, oneshot::Sender<_>>>` 配对 request/response
+  - connect 立刻发 `initialize` + `notifications/initialized` 握手
+  - `call_tool` 真发 `tools/call` 并等结果；`refresh_tools` stdio/HTTP 双路径
+  - 旧 `std::process::Command` + "deferred" 注释整段删除
+
+- **T-3.6 真 Sub-agent Delegation** (`agent-core/src/delegate.rs` + `agent-core/src/agent.rs`)
+  - 新增 `Delegate` 工具结构体（impl `Tool`），描述 `goal`/`allowed_tools`/`context`
+  - `run_subagent` 接收 `Option<&ToolRegistry>`，受 `allowed_tools` 限制后真调 `registry.execute`
+  - 深度阈值从硬编码 `>3` 改为读 `config.max_spawn_depth`
+  - `AIAgent::init_model()` 后注册 `Delegate`（持父 `Arc<dyn ChatModel>` + `Arc<RwLock<ToolRegistry>>`）
+  - 新增 `AetherError::MaxSpawnDepthExceeded(u32)`
+  - 删除 `agent.rs:72` 的 "T-3.6: 真 delegate 见 future task"
+
+- **T-3.9 Secret 处理** (`agent-core/Cargo.toml` + `agent-core/src/config.rs` + bindings)
+  - `secrecy = "0.8"` 加入 [dependencies]
+  - `AgentConfig.api_key` 类型 `Option<String>` → `Option<SecretString>`，字段改私有
+  - 手写 `impl Debug for AgentConfig`，api_key 印出 `<redacted>`
+  - 新增 `api_key_expose() / has_api_key() / set_api_key() / clear_api_key()`
+  - `provider.rs`、bindings (`lib.rs`/`wasm.rs`) 改用 `set_api_key` / `api_key_expose`
+  - 新增 `test_config_debug_redacts_api_key` 测试
+
+- **T-1.4 Profile 真接线** (`memory_tool.rs` + `skills_tool.rs` + `agent.rs`)
+  - `Memory`、`SkillsList`、`SkillView`、`SkillManage` 全部改为带 `profile_home: Option<PathBuf>`
+  - `AIAgent::new` 注册时穿入 `ProfileManager::new(config.profile.clone()).home()`
+  - `run_conversation` 后台 Review 也从 `default_hermes_home()` 改为 `self.hermes_home()`
+  - 新增 `test_profile_isolation_in_memory_tool` 集成测试
+
+- **FTS5 用 MATCH 而非 LIKE** (`agent-core/src/memory/state.rs`)
+  - `search_sessions` 改走 `messages_fts MATCH ?1 ORDER BY bm25(...)`
+  - query 用双引号 phrase 包裹 + escape 内部双引号，避免特殊字符炸 FTS5
+
+- **ZH README 同步** (`README.zh-CN.md`)
+  - 顶部 "为什么选 Aether？" + "✨ 功能" + "📊 项目进展" 三段全部撕裂修复
+  - 标签语义与 EN README 完全对齐（🟡 / 🟠 / ✅）
+  - 数字对齐：测试 52 → 48；工具 9 → 14
+
+- **工具数对齐** (`README.md` + `README.zh-CN.md` + `agent.rs` 注释)
+  - 注册次数实际 14（不含 init_model 后追加的 Delegate）
+  - README 文案 "9 real tools" → "14 real tools"
+  - `agent.rs` doc "11 个内置工具" → "14 个内置工具（init_model 后追加 delegate 共 15）"
+
+- **删除自承 deferred 注释**
+  - `mcp/mod.rs:160` "deferred to T-2.4 complete" 删
+  - `agent.rs:72` "T-3.6: 真 delegate 见 future task" 删
+
+### 验证
+
+- 系统无 cargo，纯 Read 复核语法/import/类型
+- 所有 `config.api_key` 直接访问点已迁移
+- 集成测试新增 2 项：`test_config_debug_redacts_api_key`、`test_profile_isolation_in_memory_tool`
+- 待人审核的尾巴见 `docs/FIX_PATCH.patch`
+

@@ -51,6 +51,9 @@ pub enum AetherError {
     #[error("[AE105] 会话未找到: {0}")]
     SessionNotFound(String),
 
+    #[error("[AE106] 子 Agent 委托深度超限 ({0})")]
+    MaxSpawnDepthExceeded(u32),
+
     // ── MCP 相关 ──
     #[error("[ME001] MCP 连接失败: {0}")]
     McpConnectionError(String),
@@ -128,7 +131,8 @@ impl AetherError {
             | Self::BudgetExhausted
             | Self::Interrupted
             | Self::MaxIterationsReached(_)
-            | Self::SessionNotFound(_) => "AGENT",
+            | Self::SessionNotFound(_)
+            | Self::MaxSpawnDepthExceeded(_) => "AGENT",
 
             Self::McpConnectionError(_) | Self::McpServerError(_) | Self::McpParseError(_) => "MCP",
 

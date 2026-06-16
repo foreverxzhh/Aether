@@ -17,30 +17,30 @@
 | 你想... | Hermes (Python) | Aether (Rust) |
 |---------|----------------|---------------|
 | 跑在 Android 手机上 | ❌ | ✅ Kotlin SDK |
-| 跑在 iPhone 上 | ❌ | ✅ Swift SDK |
-| 嵌入 Windows 应用 | ❌ | ✅ C# SDK |
-| 在浏览器里跑 | ❌ | ✅ WASM (coming) |
+| 跑在 iPhone 上 | ❌ | 🚧 Swift SDK（代码就绪） |
+| 嵌入 Windows 应用 | ❌ | ✅ C# SDK（已验证） |
+| 在浏览器里跑 | ❌ | ✅ WASM（587KB） |
 | 做 Rust 库集成 | ❌ | ✅ `cargo add agent-core` |
-| 完整 Hermes 功能 | ✅ | ✅ 核心引擎 + 工具系统 |
+| 完整 Hermes 功能 | ✅ | 🟡 部分 — 核心引擎可用；11 项功能中 8 项仍需收尾 |
 | 性能 | 🐍 Python | 🦀 原生编译 |
 
 ---
 
 ## ✨ 功能
 
-| 功能 | 状态 | 说明 |
-|------|------|------|
-| **Agent 引擎** | 🟡 部分 | ReAct循环可用(chat_completions)。缺失：Anthropic流式、Codex模式 |
-| **学习闭环** | 🟠 桩 | Review代码存在但非子Agent；Curator从未调度；技能全叫auto-learned-skill |
-| **L1-L4 记忆** | 🟡 部分 | L1/L2可用；FTS5声明但无触发器，搜索用LIKE而非MATCH |
-| **技能系统** | ✅ 可用 | agentskills.io解析+CRUD+搜索可用 |
-| **工具系统** | 🟡 部分 | 9个真工具。ExecuteCode非沙箱；terminal仅Windows(cmd /C) |
-| **MCP 协议** | 🟠 桩 | HTTP list_tools可用；stdio call_tool无条件Err；无OAuth |
-| **上下文压缩** | 🟠 桩 | Token估算器存在但压缩向量构建后丢弃，未接入循环 |
-| **流式输出** | 🟡 部分 | OpenAI SSE可用(仅文本)；Anthropic流式报错；工具增量丢弃 |
-| **Profile 系统** | 🟠 桩 | ProfileManager存在但active硬编码"default" |
-| **子 Agent 委托** | 🟠 桩 | delegate用空工具数组；delegate_batch是format!宏 |
-| **平台 SDK** | 🟡 部分 | Android原生二进制测试过；Web绕开agent-core；iOS/macOS未验证 |
+| 能力 | 状态 | 含义 | 缺失 |
+|------|------|------|------|
+| **Agent 引擎** | 🟡 部分 | ReAct 循环可用（chat_completions）。OpenAI 供应商完整 | Anthropic 流式：Err；无 Codex Responses 模式 |
+| **学习闭环** | 🟠 桩 | 后台 Review 代码存在但走内联，不是独立子 agent | Curator 从未调度；生成的技能全叫 `auto-learned-skill` |
+| **L1-L4 记忆** | 🟡 部分 | L1（MEMORY.md）+ L2（USER.md）可用；skills/ 目录可用 | L4 SQLite FTS5 触发器现已就绪；session `search` 已由 LIKE 切到 MATCH |
+| **技能系统** | ✅ 可用 | agentskills.io 解析 + CRUD + 搜索可用 | Skill patch 未实现 |
+| **工具系统** | 🟡 部分 | 14 个真工具（文件/终端/Web/记忆/技能/Docker/SSH/沙箱/delegate） | ExecuteCode 在宿主机直跑，非沙箱；terminal 仅 Windows (`cmd /C`) |
+| **MCP 协议** | 🟡 部分 | HTTP list_tools 可用；stdio call_tool 现已真实现（initialize 握手 + AtomicU64 id + oneshot 派发） | 仍无 OAuth |
+| **上下文压缩** | 🟠 桩 | Token 估算器编译通过 | Compressor 构建 `compressed` 向量后丢弃 — 逻辑未接入循环 |
+| **流式输出** | 🟡 部分 | OpenAI SSE 流式可用（仅文本） | Anthropic 流式报错；SSE 中 tool_call 增量被丢弃 |
+| **Profile 系统** | 🟡 部分 | ProfileManager 存在；Memory/Skills 工具与后台 Review 已穿入 profile_home | `active` 字段仍硬编码 `"default"`（无 CLI/env 切换） |
+| **子 Agent 委托** | 🟡 部分 | `Delegate` 工具已注册（init_model 后），真受 `allowed_tools` 限制并真调 registry | 子 agent 仍共享父 budget；并发子 agent 数未限流 |
+| **平台 SDK** | 🟡 部分 | Android：原生二进制真机测过；Windows：C# P/Invoke 测过 | Web SDK 绕过 agent-core（纯 fetch 包装）；iOS/macOS 未验证 |
 
 ---
 
@@ -116,14 +116,14 @@ var reply = agent.Chat("你好");
 
 | 模块 | 进度 | 说明 |
 |------|------|------|
-| 核心引擎 (102 任务) | ✅ 100% | ReAct、LLM、工具、记忆、技能、MCP、压缩、学习闭环 |
-| Android SDK | ✅ 真机验证 | ARM64 原生二进制→DeepSeek，完整对话成功 |
-| Windows SDK | ✅ 真机验证 | C# P/Invoke→agent_bindings.dll→DeepSeek，JSON 回复成功 |
-| iOS / macOS SDK | 🚧 代码就绪 | Swift 绑定+Pkg.swift 已完成，需 macOS 验证 |
-| Web SDK | ✅ 真机验证 | agent-wasm crate, web_sys::fetch, 587KB .wasm, HTML Demo |
-| CI/CD | ✅ 就绪 | GitHub Actions: test-linux/windows/macos + cross-android/wasm |
-| 测试 | ✅ 52 通过 | 18 单元 + 11 Hermes 兼容 + 19 集成 + 4 文档 |
-| crates.io | 🚧 未发布 | 元数据就绪，待推送 GitHub 后发布 |
+| 核心引擎 | 🟡 部分 | ReAct 循环 + OpenAI 供应商可用。详见上方功能表 |
+| Android SDK | 🟡 部分 | 原生二进制真机测过。无 CI，jniLibs 未入仓 |
+| Windows SDK | 🟡 部分 | C# P/Invoke 测过。无 CI，DLL 未入仓 |
+| iOS / macOS SDK | 🚧 代码就绪 | Swift 绑定存在。未编译或验证 |
+| Web SDK | 🟠 桩 | fetch() 包装，绕过 agent-core |
+| CI/CD | 🟡 部分 | 仅 lib 测试通过；完整跨平台矩阵尚未启用 |
+| 测试 | 🟡 部分 | 48 通过（含 secrecy / FTS5 / profile 隔离 / Delegate 注册新增项） |
+| crates.io | 🚧 未发布 | 未推送。路线图见 FIX_PLAN.md |
 
 ---
 

@@ -46,16 +46,23 @@ use tokio::sync::RwLock;
 pub struct AIAgent {
     /// Agent 配置
     pub config: AgentConfig,
-    model: Option<Box<dyn ChatModel>>,
+    model: Option<Arc<dyn ChatModel>>,
     pub(crate) tools: Arc<RwLock<ToolRegistry>>,
 }
 
 impl AIAgent {
     /// 创建新的 Agent 实例
     ///
-    /// 自动注册 11 个内置工具（文件/终端/Web/记忆/技能）。
-    /// 创建后需要调用 `init_model()` 初始化 LLM。
+    /// 自动注册 14 个内置工具（文件/终端/Web/记忆/技能/Docker/SSH/沙箱）。
+    /// 创建后需要调用 `init_model()` 初始化 LLM；
+    /// init_model 时会额外注册 `delegate` 工具（依赖 model 句柄）。
     pub fn new(config: AgentConfig) -> Self {
+        // T-1.4: 把 profile-aware 的 home 注入到 Memory/Skills 工具中，
+        // 避免它们走 default_hermes_home() 绕过 profile 隔离。
+        let profile_home = {
+            let pm = crate::profile::ProfileManager::new(config.profile.clone());
+            pm.home()
+        };
         let registry = ToolRegistry::new();
         registry.register(ReadFile);
         registry.register(WriteFile);
@@ -64,12 +71,11 @@ impl AIAgent {
         registry.register(Terminal);
         registry.register(WebSearch);
         registry.register(WebExtract);
-        registry.register(Memory);
-        registry.register(SkillsList);
-        registry.register(SkillView);
-        registry.register(SkillManage);
+        registry.register(Memory::new(Some(profile_home.clone())));
+        registry.register(SkillsList::new(Some(profile_home.clone())));
+        registry.register(SkillView::new(Some(profile_home.clone())));
+        registry.register(SkillManage::new(Some(profile_home)));
         // T-1.1: CronJob/ImageGenerate/HomeAssistant 已移除（桩函数，向LLM撒谎）
-        // T-3.6: 真 delegate 见 future task
         registry.register(DockerTerminal);
         registry.register(SshTerminal);
         registry.register(ExecuteCode);
@@ -100,7 +106,22 @@ impl AIAgent {
     /// 返回 `ConfigError`（未知供应商或不完整配置）。
     pub async fn init_model(&mut self) -> Result<(), AetherError> {
         let model = create_chat_model(&self.config)?;
-        self.model = Some(model);
+        let arc_model: Arc<dyn ChatModel> = Arc::from(model);
+        self.model = Some(arc_model.clone());
+
+        // T-3.6: init_model 之后注册真正的 Delegate 工具（依赖 model 句柄）。
+        // 受 config.delegation_enabled 控制，默认开启。
+        if self.config.delegation_enabled {
+            let max_depth = self.config.max_spawn_depth.max(1);
+            let max_iter = self.config.max_iterations.min(60);
+            let delegate = crate::delegate::Delegate::new(
+                arc_model,
+                self.tools.clone(),
+                max_iter,
+                max_depth,
+            );
+            self.tools.write().await.register(delegate);
+        }
         Ok(())
     }
 
@@ -154,9 +175,10 @@ impl AIAgent {
         let config = self.config.clone();
         let messages = result.messages.clone();
         let tool_count = result.tool_results.len();
+        // T-1.4: 用 profile-aware home 而非 default_hermes_home()
+        let hermes_home = self.hermes_home();
         tokio::spawn(async move {
-            if let Ok(mut review_agent) = create_chat_model(&config) {
-                let hermes_home = crate::memory::core::default_hermes_home();
+            if let Ok(review_agent) = create_chat_model(&config) {
                 if let Err(e) = crate::memory::review::review_and_learn(
                     &messages,
                     tool_count,
@@ -170,12 +192,22 @@ impl AIAgent {
             }
         });
 
-        // T-3.5: Curator inline check — chat 结束时检查是否需要运行
+        // T-3.5 v2: Curator inline check — chat 结束时**异步**触发，不阻塞当前 chat。
+        // v1 是同步调用：到期那次 chat 会被 curator 卡住（含若干 LLM 调用 + 文件 IO）。
+        // v2 改为：先用 `should_run` 做廉价检查（仅读 marker 文件），到期才 `spawn_blocking`
+        // 把真正的 `run_curator` 放到 blocking pool 上跑，主 chat 立即返回。
         let skills_dir = self.hermes_home().join("skills");
-        crate::memory::curator::maybe_run_inline(
-            &skills_dir,
-            &crate::memory::curator::CuratorConfig::default(),
-        );
+        let curator_cfg = crate::memory::curator::CuratorConfig::default();
+        if crate::memory::curator::should_run(&skills_dir, &curator_cfg) {
+            let skills_dir_bg = skills_dir.clone();
+            let cfg_bg = curator_cfg.clone();
+            tokio::task::spawn_blocking(move || {
+                match crate::memory::curator::run_curator(&skills_dir_bg, &cfg_bg) {
+                    Ok(report) => tracing::info!(?report, "Curator 已运行(后台)"),
+                    Err(e) => tracing::warn!(%e, "Curator 后台任务失败"),
+                }
+            });
+        }
 
         Ok(result)
     }

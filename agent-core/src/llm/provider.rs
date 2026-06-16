@@ -7,8 +7,7 @@ use crate::llm::{ChatModel, SimpleTokenEstimator, TokenEstimator};
 /// 根据配置创建 ChatModel 实例
 pub fn create_chat_model(config: &AgentConfig) -> Result<Box<dyn ChatModel>, AetherError> {
     let api_key = config
-        .api_key
-        .clone()
+        .api_key_expose()
         .or_else(|| std::env::var(format!("{}_API_KEY", config.provider.to_uppercase())).ok())
         .unwrap_or_default();
 

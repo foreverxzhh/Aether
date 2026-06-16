@@ -34,13 +34,17 @@ impl Tool for Terminal {
         "terminal"
     }
     fn description(&self) -> &str {
-        "在终端中执行命令（本地 shell）"
+        // v2: 让 LLM 也知道这不是 sandbox，避免它误以为命令被隔离。
+        "在宿主进程中执行 shell 命令。⚠️ 非沙箱：可读写当前用户全部文件、可访问网络、可调用任何已安装程序。仅在受控环境调用。"
     }
     fn parameters(&self) -> Value {
         json!({
             "type": "object",
             "properties": {
-                "command": {"type": "string", "description": "要执行的命令"},
+                "command": {
+                    "type": "string",
+                    "description": "要执行的 shell 命令（直接传给宿主 sh -c / cmd /C，无沙箱）"
+                },
                 "timeout": {"type": "number", "description": "超时秒数（默认 30）"}
             },
             "required": ["command"]

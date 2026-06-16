@@ -155,13 +155,22 @@ impl super::SessionStore for SqliteSessionStore {
         limit: usize,
     ) -> Result<Vec<SessionRecord>, AetherError> {
         self.with_conn(|conn| {
+            // T-2.3 / FIX-5: 用 FTS5 MATCH 替换原来的 LIKE。
+            // 双引号包裹整个 query 作为 phrase，并 escape 内部双引号，避免
+            // 用户输入中的 ":" / "AND" / "*" 等被 FTS5 当成语法。
+            let phrase = format!("\"{}\"", query.replace('"', "\"\""));
+
             let mut stmt = conn.prepare(
-                "SELECT DISTINCT s.id,s.parent_session_id,s.source,s.model,s.provider,s.created_at,s.updated_at
-                 FROM sessions s JOIN messages m ON m.session_id=s.id
-                 WHERE m.content LIKE '%' || ?1 || '%' LIMIT ?2"
+                "SELECT DISTINCT s.id, s.parent_session_id, s.source, s.model, s.provider, s.created_at, s.updated_at, \
+                        bm25(messages_fts) AS score \
+                 FROM messages_fts \
+                 JOIN messages m ON m.id = messages_fts.rowid \
+                 JOIN sessions s ON s.id = m.session_id \
+                 WHERE messages_fts MATCH ?1 \
+                 ORDER BY score LIMIT ?2"
             ).map_err(|e| AetherError::DatabaseError(e.to_string()))?;
 
-            let rows = stmt.query_map(params![format!("%{}%", query), limit as i64], |row| {
+            let rows = stmt.query_map(params![phrase, limit as i64], |row| {
                 Ok(SessionRecord {
                     id: row.get(0)?, parent_session_id: row.get(1)?, source: row.get(2)?,
                     model: row.get(3)?, provider: row.get(4)?,

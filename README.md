@@ -4,7 +4,7 @@
   <p align="center">
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat" alt="License: MIT"></a>
     <img src="https://img.shields.io/badge/status-alpha-orange?style=flat" alt="Status: Alpha">
-    <img src="https://img.shields.io/badge/tests-52%20passing-brightgreen?style=flat" alt="Tests: 52 passing">
+    <img src="https://img.shields.io/badge/tests-48%20passing-brightgreen?style=flat" alt="Tests: 48 passing">
 <img src="https://img.shields.io/badge/verified-Android%20%7C%20Windows%20%7C%20Web-brightgreen?style=flat" alt="Verified: Android, Windows, Web">
 <a href="https://github.com/foreverxzhh/Aether/actions"><img src="https://github.com/foreverxzhh/Aether/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
     <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat" alt="Platform: Cross-platform">
@@ -31,7 +31,7 @@
 | Embed in Windows app | ❌ | ✅ C# SDK (verified) |
 | Run in browser | ❌ | ✅ WASM (587KB) |
 | Embed as Rust library | ❌ | ✅ `cargo add agent-core` |
-| Full Hermes feature parity | ✅ | 🟡 Partial — core engine works; 8/11 features need work |
+| Full Hermes feature parity | ✅ | 🟡 Partial — core engine works; 11 feature areas tracked, ~7 still need work |
 | Performance | 🐍 Python | 🦀 Native compiled |
 
 ---
@@ -42,14 +42,14 @@
 |-----------|--------|---------------|---------|
 | **Agent Engine** | 🟡 Partial | ReAct loop works (chat_completions). OpenAI provider complete | Anthropic streaming: Err; no Codex Responses mode |
 | **Learning Loop** | 🟠 Stub | Background Review code exists but runs inline, not as isolated child agent | Curator never scheduled; all learned skills named `auto-learned-skill` |
-| **L1-L4 Memory** | 🟡 Partial | L1 (MEMORY.md) + L2 (USER.md) work; skills/ dir works | L4 SQLite FTS5 declared but no triggers; session `search` uses LIKE not MATCH |
+| **L1-L4 Memory** | 🟡 Partial | L1 (MEMORY.md) + L2 (USER.md) work; skills/ dir works | L4 SQLite FTS5 triggers now in place; session `search` switched from LIKE to MATCH |
 | **Skills System** | ✅ Functional | agentskills.io parse + CRUD + search works | Skill patching not implemented |
-| **Tool System** | 🟡 Partial | 9 real tools (file/terminal/web/memory/skills/docker/ssh/execute_code) | ExecuteCode runs on host, not sandboxed; terminal is Windows-only (`cmd /C`) |
-| **MCP Protocol** | 🟠 Stub | HTTP list_tools works | stdio `call_tool` returns Err unconditionally; no initialize handshake; no OAuth |
+| **Tool System** | 🟡 Partial | 14 real tools (file/terminal/web/memory/skills/docker/ssh/execute_code/delegate) | ExecuteCode runs on host, not sandboxed; terminal is Windows-only (`cmd /C`) |
+| **MCP Protocol** | 🟡 Partial | HTTP list_tools works; stdio `call_tool` now real (initialize handshake + AtomicU64 id + oneshot dispatch) | OAuth still missing |
 | **Context Compression** | 🟠 Stub | Token estimator compiles | Compressor builds `compressed` vector then drops it — logic not wired into loop |
 | **Streaming** | 🟡 Partial | OpenAI SSE streaming works (text only) | Anthropic streaming returns Err; tool_call deltas discarded in SSE |
-| **Profile System** | 🟠 Stub | ProfileManager exists | `active` field hardcoded `"default"`; `AgentConfig.profile` never read |
-| **Sub-agent Delegation** | 🟠 Stub | `delegate()` exists but uses `tools: &[]` (not "restricted", is zero tools) | `delegate_batch` is `format!("[task done]")` stub — does not call LLM |
+| **Profile System** | 🟡 Partial | ProfileManager exists; Memory/Skills tools + background Review now flow through profile_home | `active` field still hardcoded `"default"` (no CLI/env switch) |
+| **Sub-agent Delegation** | 🟡 Partial | `Delegate` tool registered post-`init_model`; really restricted by `allowed_tools` and really invokes registry | sub-agent shares parent budget; concurrent child count not throttled |
 | **Platform SDKs** | 🟡 Partial | Android: native binary tested on device; Windows: C# P/Invoke tested | Web SDK bypasses agent-core (plain fetch wrapper); iOS/macOS unverified |
 
 ---
@@ -132,7 +132,7 @@ var reply = agent.Chat("你好");
 | iOS / macOS SDK | 🚧 Code ready | Swift bindings exist. Not built or tested |
 | Web SDK | 🟠 Stub | fetch() wrapper, does not use agent-core |
 | CI/CD | 🟡 Partial | Build passes; full test matrix not yet running |
-| Tests | 🟡 Partial | 18 unit tests pass; integration tests need CI fixes |
+| Tests | 🟡 Partial | 48 lib + integration tests pass (incl. secrecy / FTS5 / profile isolation / Delegate registration) |
 | crates.io | 🚧 TODO | Not published. See FIX_PLAN.md for roadmap |
 
 ---

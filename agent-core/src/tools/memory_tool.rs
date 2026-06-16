@@ -2,15 +2,71 @@ use super::Tool;
 use crate::error::AetherError;
 use crate::memory::core::{default_hermes_home, CoreMemory, UserProfile};
 use async_trait::async_trait;
+use regex::Regex;
 use serde_json::{json, Value};
+use std::path::PathBuf;
+use std::sync::LazyLock;
 
 /// 记忆工具（读写 L1-L2 记忆）
-pub struct Memory;
+///
+/// T-1.4: 持有 profile-aware 的 `hermes_home`。
+/// `None` → fallback 到 `default_hermes_home()`（用于兼容老调用方）。
+pub struct Memory {
+    hermes_home: Option<PathBuf>,
+}
 
-/// T-3.9: 脱敏 secret + 去重
-fn redact_secrets(s: &str) -> String {
-    let re = regex::Regex::new(r"(sk-[A-Za-z0-9]{20,}|ghp_[A-Za-z0-9]{30,})").unwrap();
-    re.replace_all(s, "<redacted-secret>").to_string()
+impl Memory {
+    pub fn new(hermes_home: Option<PathBuf>) -> Self {
+        Self { hermes_home }
+    }
+
+    fn home(&self) -> PathBuf {
+        self.hermes_home
+            .clone()
+            .unwrap_or_else(default_hermes_home)
+    }
+}
+
+/// T-3.9 v2: 脱敏 secret + 去重
+///
+/// 与 v1 的区别：扩展正则覆盖 Anthropic / OpenAI project / GitHub fine-grained
+/// PAT / AWS access key / Google API / GitLab / Slack / JWT / 以及 PEM 私钥块。
+/// 顺序敏感：把更具体的前缀放在通用 `sk-` 之前，避免 `sk-ant-...` 被通用规则
+/// 提前截短。
+static SECRET_PATTERNS: LazyLock<Vec<Regex>> = LazyLock::new(|| {
+    [
+        r"sk-ant-[A-Za-z0-9_\-]{20,}",                       // Anthropic
+        r"sk-proj-[A-Za-z0-9_\-]{20,}",                      // OpenAI project keys
+        r"sk-[A-Za-z0-9]{20,}",                              // OpenAI / 通用 sk- token
+        r"ghp_[A-Za-z0-9]{30,}",                             // GitHub personal
+        r"gho_[A-Za-z0-9]{30,}",                             // GitHub OAuth
+        r"github_pat_[A-Za-z0-9_]{50,}",                     // GitHub fine-grained PAT
+        r"AKIA[0-9A-Z]{16}",                                 // AWS access key ID
+        r"AIza[0-9A-Za-z_\-]{35}",                           // Google API key
+        r"ya29\.[0-9A-Za-z_\-]{20,}",                        // Google OAuth token
+        r"glpat-[0-9a-zA-Z_\-]{20,}",                        // GitLab PAT
+        r"xox[baprs]-[0-9A-Za-z_\-]{10,}",                   // Slack token
+        r"eyJ[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}\.[A-Za-z0-9_\-]{10,}", // JWT
+    ]
+    .iter()
+    .map(|p| Regex::new(p).expect("static secret regex"))
+    .collect()
+});
+
+static PRIVATE_KEY_BLOCK: LazyLock<Regex> = LazyLock::new(|| {
+    Regex::new(r"(?s)-----BEGIN [A-Z ]+PRIVATE KEY-----.*?-----END [A-Z ]+PRIVATE KEY-----")
+        .expect("static PEM regex")
+});
+
+pub fn redact_secrets(s: &str) -> String {
+    let mut out = s.to_string();
+    for pat in SECRET_PATTERNS.iter() {
+        out = pat.replace_all(&out, "<redacted-secret>").to_string();
+    }
+    out = PRIVATE_KEY_BLOCK
+        .replace_all(&out, "<redacted-private-key>")
+        .to_string();
+    out
 }
 
 /// T-3.9: 去重检查（最近几行已存在则跳过写入）
@@ -51,7 +107,7 @@ impl Tool for Memory {
             .and_then(|v| v.as_str())
             .ok_or(AetherError::ToolInvalidArgs("缺少 action 参数".into()))?;
         let key = args.get("key").and_then(|v| v.as_str()).unwrap_or("memory");
-        let hermes_home = default_hermes_home();
+        let hermes_home = self.home();
 
         let content = match action {
             "read" => {

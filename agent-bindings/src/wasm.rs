@@ -19,7 +19,9 @@ impl WasmAgent {
         let mut config = AgentConfig::default();
         config.provider = provider.to_string();
         config.model = model.to_string();
-        config.api_key = api_key;
+        if let Some(k) = api_key {
+            config.set_api_key(k);
+        }
         Self { config }
     }
 
