@@ -1,3 +1,5 @@
+# FROZEN(2026-06-16): 此 crate 已冻结，已从 workspace members 中移除。
+# 取消 Cargo.toml workspace members 中 "agent-wasm" 的注释即可恢复编译。
 [package]
 name = "agent-wasm"
 version.workspace = true

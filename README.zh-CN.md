@@ -5,7 +5,7 @@
 
 **Aether** 用 **Rust** 重写了 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的架构——不是又做了一个 CLI 工具，而是一个**跨平台 SDK**，你可以嵌入自己的 App 里。
 
-- **Android / iOS / Windows / macOS / Linux / Web** — 一套 Rust 核心，各平台原生 SDK
+- **Android / Windows / macOS / Linux** — 一套 Rust 核心，各平台原生 SDK
 - **Hermes 兼容** — 技能、记忆、会话格式全互通
 - **自带学习闭环** — 自动从对话中生成技能、更新记忆
 - **无需后端** — 完全端侧运行，只调 LLM API
@@ -17,9 +17,9 @@
 | 你想... | Hermes (Python) | Aether (Rust) |
 |---------|----------------|---------------|
 | 跑在 Android 手机上 | ❌ | ✅ Kotlin SDK |
-| 跑在 iPhone 上 | ❌ | 🚧 Swift SDK（代码就绪） |
+| 跑在 iPhone 上 | ❌ | 🚧 Swift SDK（代码就绪）— 已冻结 |
 | 嵌入 Windows 应用 | ❌ | ✅ C# SDK（已验证） |
-| 在浏览器里跑 | ❌ | ✅ WASM（587KB） |
+| 在浏览器里跑 | ❌ | ✅ WASM（587KB）— 已冻结 |
 | 做 Rust 库集成 | ❌ | ✅ `cargo add agent-core` |
 | 完整 Hermes 功能 | ✅ | 🟡 部分 — 核心引擎可用；11 项功能中 8 项仍需收尾 |
 | 性能 | 🐍 Python | 🦀 原生编译 |
@@ -40,7 +40,7 @@
 | **流式输出** | 🟡 部分 | OpenAI SSE 流式可用（仅文本） | Anthropic 流式报错；SSE 中 tool_call 增量被丢弃 |
 | **Profile 系统** | 🟡 部分 | ProfileManager 存在；Memory/Skills 工具与后台 Review 已穿入 profile_home | `active` 字段仍硬编码 `"default"`（无 CLI/env 切换） |
 | **子 Agent 委托** | 🟡 部分 | `Delegate` 工具已注册（init_model 后），真受 `allowed_tools` 限制并真调 registry | 子 agent 仍共享父 budget；并发子 agent 数未限流 |
-| **平台 SDK** | 🟡 部分 | Android：原生二进制真机测过；Windows：C# P/Invoke 测过 | Web SDK 绕过 agent-core（纯 fetch 包装）；iOS/macOS 未验证 |
+| **平台 SDK** | 🟡 部分 | Android：原生二进制真机测过；Windows：C# P/Invoke 测过 | Web SDK + iOS SDK 已冻结 (2026-06-16) |
 
 ---
 
@@ -103,11 +103,10 @@ var reply = agent.Chat("你好");
 │  L1-L4记忆 · 技能系统 · Profile · 压缩      │
 └─────────┬──────────┬──────────┬──────────────┘
           │          │          │
-     UniFFI      P/Invoke     wasm-bindgen
+     UniFFI      P/Invoke    Native
           │          │          │
-     Android      Windows      Web
-     (Kotlin)     (C#)         (TypeScript)
-     iOS/Swift    macOS/Swift
+     Android      Windows    macOS / Linux
+     (Kotlin)     (C#)       (Rust / Python)
 ```
 
 ---
@@ -119,8 +118,8 @@ var reply = agent.Chat("你好");
 | 核心引擎 | 🟡 部分 | ReAct 循环 + OpenAI 供应商可用。详见上方功能表 |
 | Android SDK | 🟡 部分 | 原生二进制真机测过。无 CI，jniLibs 未入仓 |
 | Windows SDK | 🟡 部分 | C# P/Invoke 测过。无 CI，DLL 未入仓 |
-| iOS / macOS SDK | 🚧 代码就绪 | Swift 绑定存在。未编译或验证 |
-| Web SDK | 🟠 桩 | fetch() 包装，绕过 agent-core |
+| iOS / macOS SDK | 🚧 已冻结 | Swift 绑定存在。未编译或验证。FROZEN(2026-06-16) |
+| Web SDK | 🟠 已冻结 | fetch() 包装，绕过 agent-core。FROZEN(2026-06-16) |
 | CI/CD | 🟡 部分 | 仅 lib 测试通过；完整跨平台矩阵尚未启用 |
 | 测试 | 🟡 部分 | 48 通过（含 secrecy / FTS5 / profile 隔离 / Delegate 注册新增项） |
 | crates.io | 🚧 未发布 | 未推送。路线图见 FIX_PLAN.md |
@@ -137,10 +136,10 @@ Aether/
 │   ├── src/tools/           ← 文件、终端、Web、记忆、技能
 │   ├── src/memory/          ← L1-L4 记忆、SQLite、FTS5
 │   └── src/compression/     ← 上下文压缩
-├── agent-bindings/          ← C API + UniFFI + WASM
+├── agent-bindings/          ← C API + UniFFI
 ├── sdks/
 │   ├── android/             ← Kotlin SDK + Gradle 项目
-│   ├── ios/                 ← Swift 绑定
+│   ├── ios/                 ← Swift 绑定（已冻结）
 │   └── dotnet/              ← C# SDK + NuGet 项目
 ├── examples/
 │   └── android-demo/        ← 完整 Android 示例应用

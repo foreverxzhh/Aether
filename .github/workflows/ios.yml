@@ -8,6 +8,7 @@ on:
 
 jobs:
   build:
+    if: false  # FROZEN(2026-06-16): iOS CI 已冻结，删除此行即可恢复
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4

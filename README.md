@@ -5,9 +5,9 @@
     <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow?style=flat" alt="License: MIT"></a>
     <img src="https://img.shields.io/badge/status-alpha-orange?style=flat" alt="Status: Alpha">
     <img src="https://img.shields.io/badge/tests-48%20passing-brightgreen?style=flat" alt="Tests: 48 passing">
-<img src="https://img.shields.io/badge/verified-Android%20%7C%20Windows%20%7C%20Web-brightgreen?style=flat" alt="Verified: Android, Windows, Web">
+<img src="https://img.shields.io/badge/verified-Android%20%7C%20Windows%20%7C%20Web-brightgreen?style=flat" alt="Verified: Android, Windows">
 <a href="https://github.com/foreverxzhh/Aether/actions"><img src="https://github.com/foreverxzhh/Aether/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
-    <img src="https://img.shields.io/badge/platform-Android%20%7C%20iOS%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat" alt="Platform: Cross-platform">
+    <img src="https://img.shields.io/badge/platform-Android%20%7C%20Windows%20%7C%20macOS%20%7C%20Linux-blue?style=flat" alt="Platform: Cross-platform">
     <img src="https://img.shields.io/badge/built%20with-Rust-orange?style=flat" alt="Built with Rust">
     <a href="README.zh-CN.md"><img src="https://img.shields.io/badge/Lang-中文-red?style=flat" alt="中文"></a>
   </p>
@@ -15,7 +15,7 @@
 
 **Aether** reimplements the [Hermes Agent](https://github.com/NousResearch/hermes-agent) architecture in **Rust** — delivering the same agent capabilities as a **cross-platform SDK** you embed in your own apps, not just a CLI tool.
 
-- **Android / iOS / Windows / macOS / Linux / Web** — one Rust core, platform-native SDKs
+- **Android / Windows / macOS / Linux** — one Rust core, platform-native SDKs
 - **Drop-in replacement for Hermes** — compatible skills, memory, and session formats
 - **Real learning loop** — auto-generates skills and updates memory from conversations
 - **No backend required** — runs fully on-device, LLM API calls only
@@ -27,9 +27,9 @@
 | You want... | Hermes (Python) | Aether (Rust) |
 |------------|----------------|---------------|
 | Run on Android phone | ❌ | ✅ Kotlin SDK |
-| Run on iPhone | ❌ | 🚧 Swift SDK (code ready) |
+| Run on iPhone | ❌ | 🚧 Swift SDK (code ready) — 已冻结 |
 | Embed in Windows app | ❌ | ✅ C# SDK (verified) |
-| Run in browser | ❌ | ✅ WASM (587KB) |
+| Run in browser | ❌ | ✅ WASM (587KB) — 已冻结 |
 | Embed as Rust library | ❌ | ✅ `cargo add agent-core` |
 | Full Hermes feature parity | ✅ | 🟡 Partial — core engine works; 11 feature areas tracked, ~7 still need work |
 | Performance | 🐍 Python | 🦀 Native compiled |
@@ -50,7 +50,7 @@
 | **Streaming** | 🟡 Partial | OpenAI SSE streaming works (text only) | Anthropic streaming returns Err; tool_call deltas discarded in SSE |
 | **Profile System** | 🟡 Partial | ProfileManager exists; Memory/Skills tools + background Review now flow through profile_home | `active` field still hardcoded `"default"` (no CLI/env switch) |
 | **Sub-agent Delegation** | 🟡 Partial | `Delegate` tool registered post-`init_model`; really restricted by `allowed_tools` and really invokes registry | sub-agent shares parent budget; concurrent child count not throttled |
-| **Platform SDKs** | 🟡 Partial | Android: native binary tested on device; Windows: C# P/Invoke tested | Web SDK bypasses agent-core (plain fetch wrapper); iOS/macOS unverified |
+| **Platform SDKs** | 🟡 Partial | Android: native binary tested on device; Windows: C# P/Invoke tested | Web SDK + iOS SDK 已冻结 (2026-06-16) |
 
 ---
 
@@ -113,11 +113,10 @@ var reply = agent.Chat("你好");
 │  L1-L4 Memory · Skills · Profile · Compress  │
 └─────────┬──────────┬──────────┬──────────────┘
           │          │          │
-     UniFFI      P/Invoke     wasm-bindgen
+     UniFFI      P/Invoke    Native
           │          │          │
-     Android      Windows      Web
-     (Kotlin)     (C#)         (TypeScript)
-     iOS/Swift    macOS/Swift
+     Android      Windows    macOS / Linux
+     (Kotlin)     (C#)       (Rust / Python)
 ```
 
 ---
@@ -129,8 +128,8 @@ var reply = agent.Chat("你好");
 | Core Engine | 🟡 Partial | ReAct loop + OpenAI provider work. Feature table above shows real status |
 | Android SDK | 🟡 Partial | Native binary tested on device. No CI, jniLibs not in repo |
 | Windows SDK | 🟡 Partial | C# P/Invoke tested. No CI, DLL not in repo |
-| iOS / macOS SDK | 🚧 Code ready | Swift bindings exist. Not built or tested |
-| Web SDK | 🟠 Stub | fetch() wrapper, does not use agent-core |
+| iOS SDK | 🚧 Frozen | Swift bindings exist. Not built or tested. FROZEN(2026-06-16) |
+| Web SDK | 🟠 Frozen | fetch() wrapper, does not use agent-core. FROZEN(2026-06-16) |
 | CI/CD | 🟡 Partial | Build passes; full test matrix not yet running |
 | Tests | 🟡 Partial | 48 lib + integration tests pass (incl. secrecy / FTS5 / profile isolation / Delegate registration) |
 | crates.io | 🚧 TODO | Not published. See FIX_PLAN.md for roadmap |
@@ -147,10 +146,10 @@ Aether/
 │   ├── src/tools/           ← File, terminal, web, memory, skills
 │   ├── src/memory/          ← L1-L4 memory, SQLite, FTS5
 │   └── src/compression/     ← Context compression
-├── agent-bindings/          ← C API + UniFFI + WASM
+├── agent-bindings/          ← C API + UniFFI
 ├── sdks/
 │   ├── android/             ← Kotlin SDK + Gradle project
-│   ├── ios/                 ← Swift bindings
+│   ├── ios/                 ← Swift bindings (已冻结)
 │   └── dotnet/              ← C# SDK + NuGet project
 ├── examples/
 │   └── android-demo/        ← Complete Android demo app

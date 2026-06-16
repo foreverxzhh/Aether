@@ -324,3 +324,20 @@ T-4.2 (Web SDK 真接 agent-core):
 - 集成测试新增 2 项：`test_config_debug_redacts_api_key`、`test_profile_isolation_in_memory_tool`
 - 待人审核的尾巴见 `docs/FIX_PATCH.patch`
 
+## 2026-06-16 — 冻结 Web/WASM + iOS 支持
+
+当前阶段聚焦 Android + Windows + macOS + Linux。以下平台代码保留但标记为冻结：
+
+**冻结范围：**
+- `agent-wasm/` — WASM crate（已从 workspace members 注释）
+- `sdks/typescript/` — TypeScript Web SDK
+- `sdks/ios/` — Swift iOS SDK
+- `scripts/build-ios.sh` — iOS 构建脚本（exit 0）
+- `.github/workflows/ios.yml` — iOS CI（if: false）
+- `.github/workflows/ci.yml` cross-wasm job — WASM CI（已注释）
+- `agent-bindings/Cargo.toml` — wasm 依赖 + feature（已注释）
+- `agent-bindings/src/lib.rs` — wasm mod（已注释）
+- `rust-toolchain.toml` — wasm32 target（已注释）
+
+**恢复方式：** 全局搜索 `FROZEN(2026-06-16)` 即可找到所有冻结点，取消注释即可恢复。
+

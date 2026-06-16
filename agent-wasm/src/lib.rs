@@ -1,7 +1,9 @@
-//! T-4.2: 浏览器版 Aether Agent（wasm-bindgen 导出）。
+//! FROZEN(2026-06-16): Web/WASM 支持已冻结。
+//! 取消 workspace Cargo.toml 中 "agent-wasm" 的注释即可恢复。
+//!
+//! 浏览器版 Aether Agent（wasm-bindgen 导出）。
 //! 当前实现: 直接 web_sys::fetch 调 LLM API。
-//! TODO: 抽 HttpClient trait → agent-wasm 真接入 AIAgent（需要架构重构）。
-//! 状态: 此 task 被标记为 FIX_PLAN 唯一未完成项，待 Opus 研究方案后推进。
+//! TODO(解冻后): 抽 HttpClient trait → agent-wasm 真接入 AIAgent。
 
 use wasm_bindgen::prelude::*;
 use web_sys::{Request, RequestInit, RequestMode, Headers};

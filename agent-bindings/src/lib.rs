@@ -8,8 +8,9 @@ pub mod uniffi_sdk;
 #[cfg(feature = "uniffi")]
 uniffi::setup_scaffolding!("agent");
 
-#[cfg(feature = "wasm")]
-pub mod wasm;
+// FROZEN(2026-06-16): Web/iOS 支持已冻结，取消此注释即可恢复。
+// #[cfg(feature = "wasm")]
+// pub mod wasm;
 
 pub mod capi;
 

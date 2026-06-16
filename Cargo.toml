@@ -3,7 +3,8 @@ resolver = "3"
 members = [
     "agent-core",
     "agent-bindings",
-    "agent-wasm",
+    # FROZEN(2026-06-16): Web/iOS 支持已冻结，取消此注释即可恢复。
+    # "agent-wasm",
 ]
 
 [workspace.package]

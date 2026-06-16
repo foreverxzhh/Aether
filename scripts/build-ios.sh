@@ -1,4 +1,8 @@
 #!/bin/bash
+# FROZEN(2026-06-16): iOS 构建已冻结。需要恢复时删除下面这行 exit 0 即可。
+exit 0
+# ============================================================
+# 以下为原始构建逻辑，冻结保留
 # 构建 Aether iOS SDK
 # 前置: macOS + Xcode + rustup target add aarch64-apple-ios
 set -e

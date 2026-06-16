@@ -40,13 +40,13 @@ jobs:
           CC_aarch64_linux_android: ${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
           AR_aarch64_linux_android: ${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
 
-  # ── 交叉编译：WASM ──
-  cross-wasm:
-    name: Web (WASM)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
-      - run: cargo build -p agent-core --target wasm32-unknown-unknown --no-default-features
+  # FROZEN(2026-06-16): WASM CI 已冻结，取消此注释即可恢复。
+  # cross-wasm:
+  #   name: Web (WASM)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: dtolnay/rust-toolchain@stable
+  #       with:
+  #         targets: wasm32-unknown-unknown
+  #     - run: cargo build -p agent-core --target wasm32-unknown-unknown --no-default-features

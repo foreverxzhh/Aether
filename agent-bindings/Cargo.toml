@@ -15,16 +15,18 @@ serde_json = "1"
 futures = "0.3"
 thiserror = "2"
 uniffi = { version = "0.31", optional = true, features = ["cli"] }
-wasm-bindgen = { version = "0.2", optional = true }
-serde-wasm-bindgen = { version = "0.6", optional = true }
-js-sys = { version = "0.3", optional = true }
+# FROZEN(2026-06-16): Web/iOS 支持已冻结，取消此注释即可恢复。
+# wasm-bindgen = { version = "0.2", optional = true }
+# serde-wasm-bindgen = { version = "0.6", optional = true }
+# js-sys = { version = "0.3", optional = true }
 
 [features]
 default = ["native"]
 native = ["agent-core/native"]
 cli = ["native"]     # T-1.5: added missing feature for aether binary
 uniffi = ["dep:uniffi"]
-wasm = ["wasm-bindgen", "serde-wasm-bindgen", "js-sys"]
+# FROZEN(2026-06-16): Web/iOS 支持已冻结
+# wasm = ["wasm-bindgen", "serde-wasm-bindgen", "js-sys"]
 android = ["agent-core/portable-pty"]
 
 [lib]
