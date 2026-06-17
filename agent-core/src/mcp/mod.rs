@@ -1,3 +1,6 @@
+pub mod http;
+
+use self::http::McpHttpServer;
 use crate::error::AetherError;
 use serde_json::Value;
 use std::collections::HashMap;
@@ -27,8 +30,7 @@ enum McpTransport {
         server: Arc<McpStdioServer>,
     },
     Http {
-        base_url: String,
-        client: reqwest::Client,
+        server: Arc<McpHttpServer>,
     },
 }
 
@@ -210,56 +212,48 @@ impl McpClient {
         Ok(client)
     }
 
+    /// R-1.3: 通过 HTTP 连接 MCP 服务器
     pub async fn connect_http(base_url: &str) -> Result<Self, AetherError> {
-        let client = reqwest::Client::new();
+        let server = Arc::new(http::McpHttpServer::connect(base_url).await?);
         let mut mcp = Self {
-            transport: McpTransport::Http {
-                base_url: base_url.to_string(),
-                client,
-            },
+            transport: McpTransport::Http { server },
             tools: HashMap::new(),
         };
         mcp.refresh_tools().await?;
         Ok(mcp)
     }
 
-    /// 发送 JSON-RPC 请求并读取响应（HTTP 传输）
-    async fn send_http_request(&self, request: &Value) -> Result<String, AetherError> {
-        match &self.transport {
-            McpTransport::Http { base_url, client } => {
-                let resp = client
-                    .post(format!("{}/jsonrpc", base_url))
-                    .json(request)
-                    .send()
-                    .await
-                    .map_err(|e| AetherError::McpConnectionError(e.to_string()))?;
-                resp.text()
-                    .await
-                    .map_err(|e| AetherError::McpConnectionError(e.to_string()))
-            }
-            _ => Err(AetherError::McpConnectionError("当前传输不是 HTTP".into())),
-        }
-    }
-
     /// 刷新工具列表
     pub async fn refresh_tools(&mut self) -> Result<(), AetherError> {
         match &self.transport {
-            McpTransport::Http { .. } => {
-                let request = serde_json::json!({
-                    "jsonrpc": "2.0", "id": 1, "method": "tools/list", "params": {}
-                });
-                let response = self.send_http_request(&request).await?;
-                if let Ok(resp) = serde_json::from_str::<McpListResponse>(&response) {
-                    for tool in resp.result.tools {
-                        self.tools.insert(
-                            tool.name.clone(),
-                            McpTool {
-                                name: tool.name.clone(),
-                                description: tool.description.clone().unwrap_or_default(),
-                                parameters: tool.input_schema.unwrap_or(serde_json::json!({})),
-                            },
-                        );
+            McpTransport::Http { server } => {
+                let tools = server.list_tools().await?;
+                for v in tools {
+                    let name = v
+                        .get("name")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    if name.is_empty() {
+                        continue;
                     }
+                    let description = v
+                        .get("description")
+                        .and_then(|x| x.as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    let parameters = v
+                        .get("inputSchema")
+                        .cloned()
+                        .unwrap_or(serde_json::json!({}));
+                    self.tools.insert(
+                        name.clone(),
+                        McpTool {
+                            name,
+                            description,
+                            parameters,
+                        },
+                    );
                 }
             }
             McpTransport::Stdio { server } => {
@@ -296,15 +290,12 @@ impl McpClient {
         Ok(())
     }
 
-    /// 调用工具（T-2.4: 真正的 stdio 实现，HTTP 不变）
+    /// 调用工具（R-1.3: HTTP + stdio 双传输）
     pub async fn call_tool(&self, name: &str, args: Value) -> Result<String, AetherError> {
         match &self.transport {
-            McpTransport::Http { .. } => {
-                let request = serde_json::json!({
-                    "jsonrpc": "2.0", "id": 1, "method": "tools/call",
-                    "params": { "name": name, "arguments": args }
-                });
-                self.send_http_request(&request).await
+            McpTransport::Http { server } => {
+                let result = server.call_tool(name, args).await?;
+                Ok(result.to_string())
             }
             McpTransport::Stdio { server } => {
                 let result = server.call_tool(name, args).await?;

@@ -62,6 +62,28 @@ pub struct StreamChunk {
     pub usage: Option<TokenUsage>,
 }
 
+/// R-1.1: 流式事件枚举 — chat_stream 的标准化输出
+#[derive(Debug, Clone)]
+pub enum StreamEvent {
+    /// 文本增量
+    Text(String),
+    /// LLM 请求调用工具
+    ToolCall {
+        id: String,
+        name: String,
+        arguments: String,
+    },
+    /// 工具执行结果
+    ToolResult {
+        tool_call_id: String,
+        result: String,
+    },
+    /// 最终回复（ReAct 循环结束）
+    Done(String),
+    /// 错误
+    Error(String),
+}
+
 /// 一次对话回合的完整结果
 #[derive(Debug, Clone)]
 pub struct TurnResult {

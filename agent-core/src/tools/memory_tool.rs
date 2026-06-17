@@ -83,6 +83,9 @@ impl Tool for Memory {
     fn name(&self) -> &str {
         "memory"
     }
+    fn toolset(&self) -> &str {
+        "memory"
+    }
     fn description(&self) -> &str {
         "读写长期记忆（跨会话保持，存储在 MEMORY.md 和 USER.md）"
     }

@@ -182,6 +182,9 @@ impl Tool for WebSearch {
     fn name(&self) -> &str {
         "web_search"
     }
+    fn toolset(&self) -> &str {
+        "web"
+    }
     fn description(&self) -> &str {
         "搜索互联网信息"
     }
@@ -229,6 +232,9 @@ pub struct WebExtract;
 impl Tool for WebExtract {
     fn name(&self) -> &str {
         "web_extract"
+    }
+    fn toolset(&self) -> &str {
+        "web"
     }
     fn description(&self) -> &str {
         "抓取网页内容并提取可读文本"

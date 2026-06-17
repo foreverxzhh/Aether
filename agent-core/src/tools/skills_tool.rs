@@ -30,6 +30,9 @@ impl Tool for SkillsList {
     fn name(&self) -> &str {
         "skills_list"
     }
+    fn toolset(&self) -> &str {
+        "skills"
+    }
     fn description(&self) -> &str {
         "列出所有可用的技能"
     }
@@ -81,6 +84,9 @@ impl Tool for SkillView {
     fn name(&self) -> &str {
         "skill_view"
     }
+    fn toolset(&self) -> &str {
+        "skills"
+    }
     fn description(&self) -> &str {
         "查看技能详细内容"
     }
@@ -129,6 +135,9 @@ impl SkillManage {
 impl Tool for SkillManage {
     fn name(&self) -> &str {
         "skill_manage"
+    }
+    fn toolset(&self) -> &str {
+        "skills"
     }
     fn description(&self) -> &str {
         "创建、更新或删除技能"

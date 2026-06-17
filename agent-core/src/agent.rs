@@ -5,6 +5,8 @@ use crate::llm::{ChatModel, Streamable};
 use crate::loop_mod;
 use crate::tools::file_tools::{Patch, ReadFile, SearchFiles, WriteFile};
 use crate::tools::memory_tool::Memory;
+use crate::types::model::StreamEvent;
+use tokio::sync::mpsc;
 use crate::tools::skills_tool::{SkillManage, SkillView, SkillsList};
 use crate::tools::terminal_backends::{DockerTerminal, ExecuteCode, SshTerminal};
 use crate::tools::terminal_tool::Terminal;
@@ -57,6 +59,9 @@ impl AIAgent {
     /// 创建后需要调用 `init_model()` 初始化 LLM；
     /// init_model 时会额外注册 `delegate` 工具（依赖 model 句柄）。
     pub fn new(config: AgentConfig) -> Self {
+        // R-1.4: log_level 接线 — 在 agent 创建时初始化 tracing
+        crate::tracing::init_tracing(&config.log_level);
+
         // T-1.4: 把 profile-aware 的 home 注入到 Memory/Skills 工具中，
         // 避免它们走 default_hermes_home() 绕过 profile 隔离。
         let profile_home = {
@@ -64,21 +69,40 @@ impl AIAgent {
             pm.home()
         };
         let registry = ToolRegistry::new();
-        registry.register(ReadFile);
-        registry.register(WriteFile);
-        registry.register(Patch);
-        registry.register(SearchFiles);
-        registry.register(Terminal);
-        registry.register(WebSearch);
-        registry.register(WebExtract);
-        registry.register(Memory::new(Some(profile_home.clone())));
-        registry.register(SkillsList::new(Some(profile_home.clone())));
-        registry.register(SkillView::new(Some(profile_home.clone())));
-        registry.register(SkillManage::new(Some(profile_home)));
-        // T-1.1: CronJob/ImageGenerate/HomeAssistant 已移除（桩函数，向LLM撒谎）
-        registry.register(DockerTerminal);
-        registry.register(SshTerminal);
-        registry.register(ExecuteCode);
+
+        // R-1.4: enabled_toolsets / disabled_toolsets 过滤工具注册
+        let toolset_allowed = |ts: &str| {
+            let enabled = config.enabled_toolsets.is_empty()
+                || config.enabled_toolsets.iter().any(|e| e == ts);
+            let disabled = config.disabled_toolsets.iter().any(|d| d == ts);
+            enabled && !disabled
+        };
+
+        if toolset_allowed("file") {
+            registry.register(ReadFile);
+            registry.register(WriteFile);
+            registry.register(Patch);
+            registry.register(SearchFiles);
+        }
+        if toolset_allowed("terminal") {
+            registry.register(Terminal);
+            registry.register(DockerTerminal);
+            registry.register(SshTerminal);
+            registry.register(ExecuteCode);
+        }
+        if toolset_allowed("web") {
+            registry.register(WebSearch);
+            registry.register(WebExtract);
+        }
+        if toolset_allowed("memory") {
+            registry.register(Memory::new(Some(profile_home.clone())));
+        }
+        // R-1.4: skills_enabled 控制技能工具注册
+        if config.skills_enabled && toolset_allowed("skills") {
+            registry.register(SkillsList::new(Some(profile_home.clone())));
+            registry.register(SkillView::new(Some(profile_home.clone())));
+            registry.register(SkillManage::new(Some(profile_home)));
+        }
         Self {
             config,
             model: None,
@@ -231,6 +255,133 @@ impl AIAgent {
             .unwrap_or("unknown")
     }
 
+    /// R-1.1: 流式对话 — 返回 `Stream<Item = StreamEvent>`
+    ///
+    /// 驱动完整 ReAct 循环：
+    /// 1. 流式调用 LLM → 输出 `Text(...)` / `ToolCall(...)` 事件
+    /// 2. 工具调用完成后 → 输出 `ToolResult(...)` 事件
+    /// 3. 循环直到 LLM 不再请求工具 → 输出 `Done(...)` 事件
+    ///
+    /// 与 `chat_stream`（回调模式）等价，但使用 Rust Stream trait，
+    /// 方便 Rust 库用户用 `stream.next().await` 或 `while let Some(event) = ...` 消费。
+    pub fn chat_stream_events(
+        &self,
+        message: &str,
+    ) -> MpscStream {
+        let (tx, rx) = mpsc::channel::<StreamEvent>(32);
+        let model = self.model.clone();
+        let tools = self.tools.clone();
+        let config = self.config.clone();
+        let message = message.to_string();
+
+        tokio::spawn(async move {
+            let model = match model {
+                Some(m) => m,
+                None => {
+                    let _ = tx.send(StreamEvent::Error("模型未初始化".into())).await;
+                    let _ = tx.send(StreamEvent::Done(String::new())).await;
+                    return;
+                }
+            };
+
+            let system_msg = crate::prompt::PromptBuilder::build_system_message(
+                config.system_prompt.as_deref(), None, None,
+            );
+            let user_msg = crate::types::message::Message::user(&message);
+            let mut messages = vec![system_msg, user_msg];
+
+            loop {
+                let tool_defs = tools
+                    .try_read()
+                    .map(|r| r.get_definitions())
+                    .unwrap_or_default();
+
+                let mut stream = match model.stream(&messages, &tool_defs).await {
+                    Ok(s) => s,
+                    Err(e) => {
+                        let _ = tx.send(StreamEvent::Error(format!("流式调用失败: {}", e))).await;
+                        let _ = tx.send(StreamEvent::Done(String::new())).await;
+                        return;
+                    }
+                };
+
+                let mut full_response = String::new();
+                let mut tool_calls: Vec<crate::types::model::ToolCallInfo> = Vec::new();
+
+                loop {
+                    match stream.next_chunk().await {
+                        Ok(Some(chunk)) => {
+                            if !chunk.delta.is_empty() {
+                                full_response.push_str(&chunk.delta);
+                                let _ = tx.send(StreamEvent::Text(chunk.delta.clone())).await;
+                            }
+                            if let Some(ref tcs) = chunk.tool_calls {
+                                for tc in tcs {
+                                    let _ = tx
+                                        .send(StreamEvent::ToolCall {
+                                            id: tc.id.clone(),
+                                            name: tc.name.clone(),
+                                            arguments: tc.arguments.clone(),
+                                        })
+                                        .await;
+                                }
+                                tool_calls.extend(tcs.clone());
+                            }
+                            if chunk.finish_reason.is_some() {
+                                break;
+                            }
+                        }
+                        Ok(None) => break,
+                        Err(e) => {
+                            let _ = tx
+                                .send(StreamEvent::Error(format!("流式读取失败: {}", e)))
+                                .await;
+                            break;
+                        }
+                    }
+                }
+
+                if tool_calls.is_empty() {
+                    let _ = tx.send(StreamEvent::Done(full_response)).await;
+                    return;
+                }
+
+                // 执行工具，输出 ToolResult 事件
+                for tc in &tool_calls {
+                    let args = serde_json::from_str(&tc.arguments).unwrap_or_default();
+                    let registry = tools.read().await;
+                    match registry.execute(&tc.name, args).await {
+                        Ok(result) => {
+                            let _ = tx
+                                .send(StreamEvent::ToolResult {
+                                    tool_call_id: tc.id.clone(),
+                                    result: result.clone(),
+                                })
+                                .await;
+                            messages.push(crate::types::message::Message::tool_result(
+                                &tc.id, &result,
+                            ));
+                        }
+                        Err(e) => {
+                            let err_msg = format!("错误: {}", e);
+                            let _ = tx
+                                .send(StreamEvent::ToolResult {
+                                    tool_call_id: tc.id.clone(),
+                                    result: err_msg.clone(),
+                                })
+                                .await;
+                            messages.push(crate::types::message::Message::tool_result(
+                                &tc.id, &err_msg,
+                            ));
+                        }
+                    }
+                }
+            }
+        });
+
+        MpscStream { rx }
+    }
+
     pub async fn chat_stream<F: FnMut(StreamChunk)>(
         &self,
         message: &str,
@@ -283,5 +434,21 @@ impl AIAgent {
                 }
             }
         }
+    }
+}
+
+/// R-1.1: tokio::sync::mpsc::Receiver 的 Stream 适配器
+pub struct MpscStream {
+    rx: mpsc::Receiver<StreamEvent>,
+}
+
+impl futures::stream::Stream for MpscStream {
+    type Item = StreamEvent;
+
+    fn poll_next(
+        mut self: std::pin::Pin<&mut Self>,
+        cx: &mut std::task::Context<'_>,
+    ) -> std::task::Poll<Option<Self::Item>> {
+        self.rx.poll_recv(cx)
     }
 }

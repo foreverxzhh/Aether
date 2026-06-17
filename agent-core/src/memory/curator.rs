@@ -3,8 +3,6 @@
 use crate::error::AetherError;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
-use std::sync::Arc;
-use tokio::sync::Mutex;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CuratorState {
@@ -90,16 +88,16 @@ pub fn run_curator(
             if let Ok(mtime) = meta.modified() {
                 let dt: chrono::DateTime<chrono::Utc> = mtime.into();
                 let age = (chrono::Utc::now() - dt).num_days();
+                let fname = path
+                    .file_name()
+                    .and_then(|n| n.to_str())
+                    .unwrap_or("unknown");
                 if age >= config.archive_after_days as i64 {
-                    let dest = archive.join(path.file_name().unwrap());
+                    let dest = archive.join(fname);
                     std::fs::rename(&path, &dest).ok();
-                    report
-                        .archived
-                        .push(path.file_name().unwrap().to_string_lossy().to_string());
+                    report.archived.push(fname.to_string());
                 } else if age >= config.stale_after_days as i64 {
-                    report
-                        .stale
-                        .push(path.file_name().unwrap().to_string_lossy().to_string());
+                    report.stale.push(fname.to_string());
                 } else {
                     report.active += 1;
                 }

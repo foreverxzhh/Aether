@@ -195,6 +195,9 @@ impl Tool for Delegate {
     fn name(&self) -> &str {
         "delegate"
     }
+    fn toolset(&self) -> &str {
+        "delegate"
+    }
     fn description(&self) -> &str {
         "Delegate a sub-task to a child agent with a restricted tool subset"
     }

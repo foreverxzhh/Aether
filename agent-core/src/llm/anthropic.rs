@@ -137,12 +137,34 @@ impl AnthropicProvider {
             "messages": api_messages,
         });
 
+        // R-1.5: Anthropic prompt caching — cache_control for system / tools / stable messages
         if !sys_prompts.is_empty() {
-            body["system"] = Value::String(sys_prompts.join("\n"));
+            body["system"] = serde_json::json!([
+                {
+                    "type": "text",
+                    "text": sys_prompts.join("\n"),
+                    "cache_control": { "type": "ephemeral" }
+                }
+            ]);
         }
 
         if !tools.is_empty() {
-            body["tools"] = Value::Array(tools.to_vec());
+            // Wrap each tool definition with cache_control on the last one
+            let mut cached_tools: Vec<Value> = Vec::new();
+            for (i, tool) in tools.iter().enumerate() {
+                let mut t = tool.clone();
+                if i == tools.len() - 1 {
+                    // Attach cache_control to the last tool definition
+                    if let Some(obj) = t.as_object_mut() {
+                        obj.insert(
+                            "cache_control".to_string(),
+                            serde_json::json!({ "type": "ephemeral" }),
+                        );
+                    }
+                }
+                cached_tools.push(t);
+            }
+            body["tools"] = Value::Array(cached_tools);
         }
 
         body

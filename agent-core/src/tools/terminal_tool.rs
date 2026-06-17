@@ -33,6 +33,9 @@ impl Tool for Terminal {
     fn name(&self) -> &str {
         "terminal"
     }
+    fn toolset(&self) -> &str {
+        "terminal"
+    }
     fn description(&self) -> &str {
         // v2: 让 LLM 也知道这不是 sandbox，避免它误以为命令被隔离。
         "在宿主进程中执行 shell 命令。⚠️ 非沙箱：可读写当前用户全部文件、可访问网络、可调用任何已安装程序。仅在受控环境调用。"

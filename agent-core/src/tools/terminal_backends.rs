@@ -11,6 +11,9 @@ impl Tool for DockerTerminal {
     fn name(&self) -> &str {
         "docker_terminal"
     }
+    fn toolset(&self) -> &str {
+        "terminal"
+    }
     fn description(&self) -> &str {
         "在 Docker 容器中执行命令（需要 Docker daemon）"
     }
@@ -53,6 +56,9 @@ pub struct SshTerminal;
 impl Tool for SshTerminal {
     fn name(&self) -> &str {
         "ssh_terminal"
+    }
+    fn toolset(&self) -> &str {
+        "terminal"
     }
     fn description(&self) -> &str {
         "通过 SSH 在远程主机上执行命令"
@@ -100,6 +106,9 @@ impl Tool for ExecuteCode {
     fn name(&self) -> &str {
         "execute_code"
     }
+    fn toolset(&self) -> &str {
+        "terminal"
+    }
     fn description(&self) -> &str {
         "在隔离进程中执行代码片段（Python/JavaScript），限制资源"
     }
@@ -108,18 +117,29 @@ impl Tool for ExecuteCode {
             "language":{"type":"string","enum":["python","javascript","shell"]},
             "code":{"type":"string","description":"代码内容"},
             "timeout":{"type":"number","description":"超时秒数(默认10)"},
-            "backend":{"type":"string","enum":["host","docker"],"description":"执行后端(默认host; docker需daemon)"}
+            "backend":{"type":"string","enum":["host","docker"],"description":"执行后端(默认docker; docker需daemon,不可用时自动fallback host)"}
         },"required":["language","code"]})
     }
     async fn call(&self, args: Value) -> Result<String, AetherError> {
         let lang = args.get("language").and_then(|v| v.as_str()).ok_or(AetherError::ToolInvalidArgs("缺少 language 参数".into()))?;
         let code = args.get("code").and_then(|v| v.as_str()).ok_or(AetherError::ToolInvalidArgs("缺少 code 参数".into()))?;
         let timeout_secs = args.get("timeout").and_then(|v| v.as_u64()).unwrap_or(10);
-        let backend = args.get("backend").and_then(|v| v.as_str()).unwrap_or("host");
+        // R-1.6: 默认 backend = "docker"，daemon 不可用时自动 fallback host
+        let backend = args.get("backend").and_then(|v| v.as_str()).unwrap_or("docker");
 
         // T-4.1: Docker backend 支持
         if backend == "docker" {
-            return Self::run_docker(lang, code, timeout_secs).await;
+            match Self::run_docker(lang, code, timeout_secs).await {
+                Ok(result) => return Ok(result),
+                Err(e) => {
+                    tracing::warn!(
+                        backend = "docker",
+                        error = %e,
+                        "Docker 执行失败，fallback 到 host 执行"
+                    );
+                    // 继续走 host backend
+                }
+            }
         }
 
         // Host backend (默认)

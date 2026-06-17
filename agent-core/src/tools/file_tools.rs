@@ -32,6 +32,9 @@ impl Tool for ReadFile {
     fn name(&self) -> &str {
         "read_file"
     }
+    fn toolset(&self) -> &str {
+        "file"
+    }
     fn description(&self) -> &str {
         "读取文件内容"
     }
@@ -55,6 +58,9 @@ pub struct WriteFile;
 impl Tool for WriteFile {
     fn name(&self) -> &str {
         "write_file"
+    }
+    fn toolset(&self) -> &str {
+        "file"
     }
     fn description(&self) -> &str {
         "写入文件内容（覆盖）"
@@ -87,6 +93,9 @@ pub struct Patch;
 impl Tool for Patch {
     fn name(&self) -> &str {
         "patch"
+    }
+    fn toolset(&self) -> &str {
+        "file"
     }
     fn description(&self) -> &str {
         "对文件应用行级补丁（diff 格式）"
@@ -129,6 +138,9 @@ pub struct SearchFiles;
 impl Tool for SearchFiles {
     fn name(&self) -> &str {
         "search_files"
+    }
+    fn toolset(&self) -> &str {
+        "file"
     }
     fn description(&self) -> &str {
         "在目录中搜索文件（支持 glob 和内容搜索）"
