@@ -12,15 +12,22 @@ env:
   RUST_BACKTRACE: 1
 
 jobs:
-  # ── 编译 + 测试 (Linux) ──
+  # R-W1: 编译 + 测试 (Linux + Windows matrix)
   build-and-test:
-    name: Build
-    runs-on: ubuntu-latest
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
       - run: cargo build -p agent-core -p agent-bindings
       - run: cargo test -p agent-core --lib
+      # R-W1: Windows 额外验证 — C API 编译 + dotnet 检测
+      - if: matrix.os == 'windows-latest'
+        run: cargo build -p agent-bindings --features cli
 
   # ── 交叉编译：Android ARM64 ──
   cross-android:
