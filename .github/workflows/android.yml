@@ -1,4 +1,4 @@
-# T-4.3: Android SDK CI — NDK 交叉编译 + Gradle 打包
+# R-A1 + R-A3: Android SDK CI — NDK 交叉编译 + .so artifact
 name: Android
 
 on:
@@ -15,14 +15,21 @@ jobs:
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi
       - uses: nttld/setup-ndk@v1
+        id: ndk
         with:
           ndk-version: r27
-      - name: 交叉编译 agent-bindings
+      - name: 交叉编译 agent-bindings (ARM64)
         run: |
           cargo build -p agent-bindings --target aarch64-linux-android --release --no-default-features
         env:
-          CC_aarch64_linux_android: ${{ steps.setup-ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          CC_aarch64_linux_android: ${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang
+          AR_aarch64_linux_android: ${{ steps.ndk.outputs.ndk-path }}/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-ar
+      - name: 复制 .so 到 jniLibs
+        run: |
+          mkdir -p sdks/android/src/main/jniLibs/arm64-v8a
+          cp target/aarch64-linux-android/release/libagent_bindings.so \
+             sdks/android/src/main/jniLibs/arm64-v8a/
       - uses: actions/upload-artifact@v4
         with:
-          name: android-so
-          path: target/aarch64-linux-android/release/libagent_bindings.so
+          name: android-jniLibs
+          path: sdks/android/src/main/jniLibs/
