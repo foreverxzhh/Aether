@@ -1,6 +1,7 @@
 use crate::config::AgentConfig;
 use crate::error::AetherError;
 use crate::llm::anthropic::AnthropicProvider;
+use crate::llm::codex::CodexProvider;
 use crate::llm::openai::OpenAIProvider;
 use crate::llm::{ChatModel, SimpleTokenEstimator, TokenEstimator};
 
@@ -67,6 +68,17 @@ pub fn create_chat_model(config: &AgentConfig) -> Result<Box<dyn ChatModel>, Aet
                 provider = provider.with_max_tokens(n);
             }
             Ok(Box::new(provider))
+        }
+        "codex" => {
+            let base_url = config
+                .base_url
+                .as_deref()
+                .unwrap_or("https://api.openai.com/v1");
+            Ok(Box::new(CodexProvider::new(
+                &api_key,
+                &config.model,
+                Some(base_url),
+            )))
         }
         provider => Err(AetherError::ConfigError(format!(
             "不支持的供应商: {}。当前支持: openai / anthropic / deepseek / ollama",

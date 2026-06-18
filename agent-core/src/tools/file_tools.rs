@@ -15,11 +15,24 @@ fn secure_path(path: &str) -> Result<std::path::PathBuf, AetherError> {
     }
     // canonicalize 解析符号链接
     let cwd = std::env::current_dir().map_err(|e| AetherError::IoError(e.to_string()))?;
-    let absolute = cwd.join(p);
-    let canonical = std::fs::canonicalize(&absolute)
-        .unwrap_or_else(|_| absolute.clone()); // fallback if file doesn't exist yet
-    // 确保解析后仍在当前工作目录内
-    if !canonical.starts_with(&cwd) {
+    let cwd_canon = std::fs::canonicalize(&cwd).unwrap_or_else(|_| cwd.clone());
+    let absolute = cwd_canon.join(p);
+    // R-3.6: 不 fallback 到绝对路径。对新文件走 parent canonicalize。
+    let canonical = match std::fs::canonicalize(&absolute) {
+        Ok(p) => p,
+        Err(_) => {
+            let parent = absolute
+                .parent()
+                .ok_or_else(|| AetherError::ToolExecutionError("路径无父目录".into()))?;
+            let parent_canon = std::fs::canonicalize(parent).unwrap_or_else(|_| parent.to_path_buf());
+            parent_canon.join(
+                absolute
+                    .file_name()
+                    .ok_or_else(|| AetherError::ToolExecutionError("路径无文件名".into()))?,
+            )
+        }
+    };
+    if !canonical.starts_with(&cwd_canon) {
         return Err(AetherError::ToolExecutionError("路径越权访问".into()));
     }
     Ok(canonical)

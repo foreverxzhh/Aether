@@ -4,39 +4,39 @@ All notable changes to this project will be documented in this file.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 versioning follows [SemVer](https://semver.org/).
 
-## [Unreleased]
+## [0.5.0-beta] — 2026-06-17
 
-### Added (M1 — feat: P0 核心补完)
+### Added (M1 — P0 核心补完)
 - `chat_stream_events()` 返回 `impl Stream<Item = StreamEvent>` 真跑 ReAct 循环 (R-1.1)
 - `StreamEvent` enum: `Text` / `ToolCall` / `ToolResult` / `Done` / `Error` (R-1.1)
 - Ollama provider via OpenAI-compat endpoint (R-1.2)
 - `McpHttpServer` — MCP HTTP transport with `initialize` handshake (R-1.3)
 - Anthropic prompt caching: `cache_control: ephemeral` on stable system prompt (R-1.5)
-- `Tool::toolset()` trait method, 14 built-in tools all override (R-1.4)
+- `Tool::toolset()` trait method, 15 built-in tools all override (R-1.4)
+- `CodexProvider` — OpenAI Responses API support (R-3.3)
+- `McpServer` — MCP stdio server, expose Aether tools to Claude Desktop/Cursor (R-3.1)
+- `aether mcp-server` CLI subcommand (R-3.1)
 
-### Changed
-- `config.log_level` now wires through to `tracing_subscriber` (R-1.4 + H3)
-- `config.skills_enabled` now gates SkillsList/View/Manage registration (R-1.4)
-- `config.enabled_toolsets` / `disabled_toolsets` now filter tool registration (R-1.4)
-- ExecuteCode tool: default backend changed `host` → `docker` (fallback `host` with warning) (R-1.6)
-- `PromptBuilder` now exposes `build_parts()` with `PromptParts { stable, contextual, volatile }` (H4)
+### Changed (M2 — 4 端 binding)
+- CI matrix: ubuntu-latest + windows-latest (R-W1)
+- macOS universal dylib build (R-M1, R-M2)
+- Android CI updated: .so → jniLibs artifact (R-A3)
+- config.temperature / max_tokens wired to LLM providers (H6)
+- compression_threshold_ratio replaces hardcoded 96000 (H6)
+- CJK token estimation: ~1 token/char for Chinese (R-3.5)
+- secure_path Err on canonicalize failure instead of fallback (R-3.6)
 
 ### Fixed (M1 hotfix)
-- **H1**: MCP HTTP `Mcp-Session-Id` header now persisted across requests via `Mutex<Option<String>>` (was extracted then dropped)
-- **H2**: `chat_stream_events` now respects `config.max_iterations` (was unbounded — could burn unlimited tokens)
-- **H3**: `init_tracing()` now actually applies log filter via `Registry::default().with(filter).with(layer).try_init()` (was constructing subscriber then dropping it)
-- **H4**: Anthropic `cache_control` now only on stable prompt segment (not on contextual segments containing `Local::now()`); `cache_read_input_tokens` now parsed from API response and exposed
+- **H1**: MCP HTTP `Mcp-Session-Id` now persisted via `Mutex<Option<String>>`
+- **H2**: `chat_stream_events` now respects `config.max_iterations`
+- **H3**: `init_tracing()` chain-call `Registry::default().with(filter).try_init()`
+- **H4**: Anthropic cache only on stable prompt segment; `cache_read_input_tokens` parsed
 - `curator.rs` 3× `.file_name().unwrap()` → `.unwrap_or("unknown")` (R-1.7)
-- `curator.rs` unused imports removed (R-1.8)
+- Learning Loop skills now named `review-{YYYYMMDD_HHMMSS}` not `auto-learned-skill` (R-3.4)
 
 ### Breaking
-- `StreamEvent` is a new public enum. Downstream code consuming `chat_stream`'s callback-based output should migrate to `chat_stream_events`. The old `chat_stream` callback API is present but will be deprecated.
-
-### Internal
-- `agent.rs` gained `chat_stream_events` (~130 lines) + `MpscStream` adapter
-- `mcp/http.rs` new file (190 lines)
-- `prompt.rs` gained `PromptParts` struct + 3 unit tests
-- 83 tests passing (+9 from v0.4)
+- `StreamEvent` is a new public enum. Migrate callback-based `chat_stream` consumers to `chat_stream_events`.
+- `memory_provider` and `max_concurrent_children` fields feature-gated (experimental_config).
 
 ## [0.4.0] — 2026-06-16
 

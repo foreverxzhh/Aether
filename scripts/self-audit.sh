@@ -240,6 +240,34 @@ grep -q "compression_threshold_ratio" agent-core/src/loop_mod.rs 2>/dev/null && 
     pass "compression_threshold_ratio 真消费" || \
     warn "compression_threshold_ratio 硬编码 (H6)"
 
+# R-3.1 MCP server
+if grep -q "pub struct McpServer" agent-core/src/mcp/server.rs 2>/dev/null; then
+    pass "McpServer 真存在 (R-3.1)"
+else
+    fail "McpServer 缺失 (R-3.1)"
+fi
+
+# R-3.3 codex_responses
+if grep -q "pub struct CodexProvider" agent-core/src/llm/codex.rs 2>/dev/null; then
+    pass "CodexProvider 真存在 (R-3.3)"
+else
+    fail "CodexProvider 缺失 (R-3.3)"
+fi
+
+# R-3.5 CJK token estimation
+if grep -q "CJK\|estimate_text_tokens" agent-core/src/llm/mod.rs 2>/dev/null; then
+    pass "CJK token 估算已实现 (R-3.5)"
+else
+    fail "CJK token 估算缺失 (R-3.5)"
+fi
+
+# R-3.6 secure_path Err
+if grep -q "parent_canon\|canonicalize(parent)" agent-core/src/tools/file_tools.rs 2>/dev/null; then
+    pass "secure_path parent canonicalize (R-3.6)"
+else
+    fail "secure_path 仍在 fallback (R-3.6)"
+fi
+
 # ── 阶段 6：不再需要的 feature gate 检查 ──
 echo ""
 echo "── 阶段 6：无效 feature gate ──"

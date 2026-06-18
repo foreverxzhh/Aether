@@ -41,7 +41,7 @@
 | Capability | Status | What it means | Missing |
 |-----------|--------|---------------|---------|
 | **Agent Engine** | 🟡 Partial | ReAct loop works (chat_completions). OpenAI provider complete | Anthropic streaming: Err; no Codex Responses mode |
-| **Learning Loop** | 🟠 Stub | Background Review code exists but runs inline, not as isolated child agent | Curator never scheduled; all learned skills named `auto-learned-skill` |
+| **Learning Loop** | 🟡 Partial | Background Review spawns via tokio::spawn; Curator in spawn_blocking | Skills named `review-{YYYYMMDD_HHMMSS}`; still inline, not isolated child agent |
 | **L1-L4 Memory** | 🟡 Partial | L1 (MEMORY.md) + L2 (USER.md) work; skills/ dir works | L4 SQLite FTS5 triggers now in place; session `search` switched from LIKE to MATCH |
 | **Skills System** | ✅ Functional | agentskills.io parse + CRUD + search works | Skill patching not implemented |
 | **Tool System** | 🟡 Partial | 14 real tools (file/terminal/web/memory/skills/docker/ssh/execute_code/delegate) | ExecuteCode runs on host, not sandboxed; terminal is Windows-only (`cmd /C`) |

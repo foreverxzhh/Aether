@@ -149,6 +149,11 @@ impl AIAgent {
         Ok(())
     }
 
+    /// R-3.1: 获取 tool registry（给 MCP server 用）
+    pub fn tools(&self) -> &Arc<RwLock<ToolRegistry>> {
+        &self.tools
+    }
+
     pub fn get_tool_definitions(&self) -> Vec<serde_json::Value> {
         self.tools
             .try_read()

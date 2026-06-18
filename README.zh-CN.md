@@ -31,7 +31,7 @@
 | 能力 | 状态 | 含义 | 缺失 |
 |------|------|------|------|
 | **Agent 引擎** | 🟡 部分 | ReAct 循环可用（chat_completions）。OpenAI 供应商完整 | Anthropic 流式：Err；无 Codex Responses 模式 |
-| **学习闭环** | 🟠 桩 | 后台 Review 代码存在但走内联，不是独立子 agent | Curator 从未调度；生成的技能全叫 `auto-learned-skill` |
+| **学习闭环** | 🟡 部分 | 后台 Review 通过 tokio::spawn 生成；Curator 走 spawn_blocking | 技能命名 `review-{YYYYMMDD_HHMMSS}`；仍内联非独立子 agent |
 | **L1-L4 记忆** | 🟡 部分 | L1（MEMORY.md）+ L2（USER.md）可用；skills/ 目录可用 | L4 SQLite FTS5 触发器现已就绪；session `search` 已由 LIKE 切到 MATCH |
 | **技能系统** | ✅ 可用 | agentskills.io 解析 + CRUD + 搜索可用 | Skill patch 未实现 |
 | **工具系统** | 🟡 部分 | 14 个真工具（文件/终端/Web/记忆/技能/Docker/SSH/沙箱/delegate） | ExecuteCode 在宿主机直跑，非沙箱；terminal 仅 Windows (`cmd /C`) |
