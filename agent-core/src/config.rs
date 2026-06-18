@@ -139,7 +139,13 @@ impl Default for AgentConfig {
             max_iterations: 90,
             temperature: None,
             max_tokens: None,
-            enabled_toolsets: vec!["core".to_string()],
+            enabled_toolsets: vec![
+                "file".to_string(),
+                "terminal".to_string(),
+                "web".to_string(),
+                "memory".to_string(),
+                "skills".to_string(),
+            ],
             disabled_toolsets: Vec::new(),
             memory_enabled: true,
             #[cfg(feature = "experimental_config")]

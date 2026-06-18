@@ -1,4 +1,5 @@
 pub mod http;
+pub mod oauth;
 pub mod server;
 
 use self::http::McpHttpServer;

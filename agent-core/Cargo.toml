@@ -32,6 +32,10 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "json"], optio
 uuid = { version = "1", features = ["v4"], optional = true }
 futures = { version = "0.3", optional = true }
 inventory = { version = "0.3", optional = true }
+# R-3.2: MCP OAuth PKCE
+rand = { version = "0.8", optional = true }
+sha2 = { version = "0.10", optional = true }
+base64 = { version = "0.22", optional = true }
 portable-pty = { version = "0.7", optional = true }
 similar = { version = "2", optional = true }
 glob = { version = "0.3", optional = true }
@@ -39,8 +43,9 @@ scraper = { version = "0.19", optional = true }
 
 [features]
 default = ["native"]
-native = ["tokio", "reqwest", "rusqlite", "tracing", "tracing-subscriber", "uuid", "futures", "inventory", "portable-pty", "similar", "glob", "scraper"]
+native = ["tokio", "reqwest", "rusqlite", "tracing", "tracing-subscriber", "uuid", "futures", "inventory", "portable-pty", "similar", "glob", "scraper", "rand", "sha2", "base64"]
 experimental_stubs = []  # T-1.1: 仅开发/演示，不暴露给LLM
 
 [dev-dependencies]
 tempfile = "3"
+wiremock = "0.6"

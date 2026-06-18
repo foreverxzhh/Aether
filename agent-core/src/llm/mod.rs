@@ -73,18 +73,6 @@ fn estimate_text_tokens(text: &str) -> u32 {
     tokens
 }
 
-/// 统计 CJK 字符数（用于 token 估算精度）
-fn count_cjk_chars(text: &str) -> u32 {
-    text.chars()
-        .filter(|ch| {
-            (*ch as u32) >= 0x4E00 && (*ch as u32) <= 0x9FFF
-                || (*ch as u32) >= 0x3400 && (*ch as u32) <= 0x4DBF
-                || (*ch as u32) >= 0x3000 && (*ch as u32) <= 0x303F
-                || (*ch as u32) >= 0xFF00 && (*ch as u32) <= 0xFFEF
-        })
-        .count() as u32
-}
-
 impl TokenEstimator for SimpleTokenEstimator {
     fn estimate_messages_tokens(&self, messages: &[Message]) -> u32 {
         messages

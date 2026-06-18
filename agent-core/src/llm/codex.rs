@@ -178,13 +178,14 @@ impl ChatModel for CodexProvider {
         self.parse_response(&text)
     }
 
+    // R-3.3: Responses API 流式暂不支持（OpenAI 2026 Q2 已支持，待后续适配）
     async fn stream(
         &self,
         _messages: &[Message],
         _tools: &[Value],
     ) -> Result<Box<dyn Streamable>, AetherError> {
         Err(AetherError::LlmError(
-            "Responses API 流式尚未实现".into(),
+            "Responses API streaming not yet supported. Use chat_completions or anthropic_messages mode for streaming.".into(),
         ))
     }
 }

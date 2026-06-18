@@ -75,15 +75,23 @@ impl McpServer {
                     // 确认收到 — 不响应
                 }
                 "tools/list" => {
-                    let result = self.handle_tools_list();
-                    if !is_notification {
-                        self.write_response(&mut stdout.lock(), id.as_ref(), &result);
+                    if !self.initialized.load(Ordering::SeqCst) {
+                        self.write_error(&mut stdout.lock(), id.as_ref(), "Server not initialized. Send initialize first.");
+                    } else {
+                        let result = self.handle_tools_list();
+                        if !is_notification {
+                            self.write_response(&mut stdout.lock(), id.as_ref(), &result);
+                        }
                     }
                 }
                 "tools/call" => {
-                    let result = self.handle_tools_call(&params);
-                    if !is_notification {
-                        self.write_response(&mut stdout.lock(), id.as_ref(), &result);
+                    if !self.initialized.load(Ordering::SeqCst) {
+                        self.write_error(&mut stdout.lock(), id.as_ref(), "Server not initialized. Send initialize first.");
+                    } else {
+                        let result = self.handle_tools_call(&params);
+                        if !is_notification {
+                            self.write_response(&mut stdout.lock(), id.as_ref(), &result);
+                        }
                     }
                 }
                 "ping" => {
