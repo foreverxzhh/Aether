@@ -7,11 +7,15 @@ use crate::error::AetherError;
 use serde_json::Value;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 /// MCP HTTP 服务器句柄
+///
+/// H1: `session_id` 用 `Mutex<Option<String>>` 持有，
+/// request() 发送时附带，收到响应后写回。
 pub struct McpHttpServer {
     base_url: String,
-    session_id: Option<String>,
+    session_id: Mutex<Option<String>>,
     next_id: AtomicU64,
     timeout: Duration,
 }
@@ -21,7 +25,7 @@ impl McpHttpServer {
     pub async fn connect(base_url: &str) -> Result<Self, AetherError> {
         let server = Self {
             base_url: base_url.trim_end_matches('/').to_string(),
-            session_id: None,
+            session_id: Mutex::new(None),
             next_id: AtomicU64::new(1),
             timeout: Duration::from_secs(30),
         };
@@ -64,20 +68,26 @@ impl McpHttpServer {
 
         let mut req = client.post(&self.base_url).json(&body);
 
-        if let Some(ref sid) = self.session_id {
-            req = req.header("Mcp-Session-Id", sid);
+        // H1: 发送时附带已存储的 Session-Id
+        {
+            let guard = self.session_id.lock().await;
+            if let Some(ref sid) = *guard {
+                req = req.header("Mcp-Session-Id", sid);
+            }
         }
 
         let resp = req.send().await.map_err(|e| {
             AetherError::McpConnectionError(format!("HTTP 请求失败: {}", e))
         })?;
 
-        // 提取 Session-Id
-        let sid = resp
+        // H1: 收到 Session-Id 立刻持久化
+        if let Some(sid) = resp
             .headers()
             .get("Mcp-Session-Id")
             .and_then(|v| v.to_str().ok())
-            .map(|s| s.to_string());
+        {
+            *self.session_id.lock().await = Some(sid.to_string());
+        }
 
         let status = resp.status();
         let resp_body: Value = resp.json().await.map_err(|e| {
@@ -94,12 +104,6 @@ impl McpHttpServer {
 
         if let Some(err) = resp_body.get("error") {
             return Err(AetherError::McpServerError(err.to_string()));
-        }
-
-        // 更新 session
-        if sid.is_some() {
-            // Note: self.session_id is immutable; we store it via a different path
-            // For now, session management happens at the McpClient level
         }
 
         Ok(resp_body.get("result").cloned().unwrap_or(Value::Null))
@@ -119,8 +123,11 @@ impl McpHttpServer {
             .map_err(|e| AetherError::McpConnectionError(format!("HTTP client 构建失败: {}", e)))?;
 
         let mut req = client.post(&self.base_url).json(&body);
-        if let Some(ref sid) = self.session_id {
-            req = req.header("Mcp-Session-Id", sid);
+        {
+            let guard = self.session_id.lock().await;
+            if let Some(ref sid) = *guard {
+                req = req.header("Mcp-Session-Id", sid);
+            }
         }
 
         req.send().await.map_err(|e| {
@@ -169,7 +176,7 @@ mod tests {
         // 验证构造成功（不实际连接）
         let server = McpHttpServer {
             base_url: "http://localhost:8080/mcp".to_string(),
-            session_id: None,
+            session_id: Mutex::new(None),
             next_id: AtomicU64::new(1),
             timeout: Duration::from_secs(30),
         };
@@ -180,7 +187,7 @@ mod tests {
     fn test_with_timeout() {
         let server = McpHttpServer {
             base_url: "http://localhost:8080/mcp".to_string(),
-            session_id: None,
+            session_id: Mutex::new(None),
             next_id: AtomicU64::new(1),
             timeout: Duration::from_secs(30),
         };

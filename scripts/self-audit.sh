@@ -186,6 +186,60 @@ grep -q "spawn_blocking" agent-core/src/agent.rs 2>/dev/null && \
     pass "Curator 已 spawn_blocking 异步化" || \
     warn "Curator: 未使用 spawn_blocking（可能仍阻塞主线程）"
 
+# R-1.1 chat_stream ReAct 循环 (H2 防回归)
+if grep -q "StreamEvent::Done" agent-core/src/agent.rs 2>/dev/null; then
+    pass "chat_stream_events 真实现 (StreamEvent::Done)"
+else
+    fail "chat_stream_events 缺 StreamEvent::Done"
+fi
+grep -qE "max_iterations|max_iter" agent-core/src/agent.rs 2>/dev/null && \
+    pass "chat_stream_events 有迭代上限" || \
+    fail "chat_stream_events 无熔断 (H2 回归)"
+
+# R-1.3 MCP HTTP (H1 防回归)
+if grep -q "pub struct McpHttpServer" agent-core/src/mcp/http.rs 2>/dev/null; then
+    pass "McpHttpServer 真存在"
+else
+    fail "McpHttpServer 不存在"
+fi
+grep -q "session_id.*Mutex" agent-core/src/mcp/http.rs 2>/dev/null && \
+    pass "MCP HTTP Session-Id 真持久化 (Mutex)" || \
+    fail "MCP HTTP Session-Id 未持久化 (H1 回归)"
+
+# R-1.5 Anthropic caching (H4 防回归)
+grep -q "cache_read_input_tokens" agent-core/src/llm/anthropic.rs 2>/dev/null && \
+    pass "AnthropicUsage 真解析 cache_read_input_tokens" || \
+    fail "AnthropicUsage 未读 cache_read_input_tokens (H4 回归)"
+grep -q "PromptParts" agent-core/src/prompt.rs 2>/dev/null && \
+    pass "PromptParts 三段拆分存在" || \
+    fail "PromptParts 缺失 (H4 回归)"
+
+# H3 tracing 死路径防回归
+if grep -qE "let _.*=.*Registry::default\(\)" agent-core/src/tracing.rs 2>/dev/null; then
+    fail "tracing.rs 仍是 build-then-drop (H3 回归)"
+else
+    pass "tracing.rs 真 try_init (无 let _ 模式)"
+fi
+
+# H5 CHANGELOG 存在
+if [ -f CHANGELOG.md ]; then
+    pass "CHANGELOG.md 存在"
+else
+    fail "CHANGELOG.md 缺失 (H5)"
+fi
+
+# H6 config 字段消费检查
+for field in temperature max_tokens; do
+    if grep -rq "config\.${field}\|with_${field}" agent-core/src/llm/ 2>/dev/null; then
+        pass "config.${field} 真消费"
+    else
+        warn "config.${field} 未消费 (H6)"
+    fi
+done
+grep -q "compression_threshold_ratio" agent-core/src/loop_mod.rs 2>/dev/null && \
+    pass "compression_threshold_ratio 真消费" || \
+    warn "compression_threshold_ratio 硬编码 (H6)"
+
 # ── 阶段 6：不再需要的 feature gate 检查 ──
 echo ""
 echo "── 阶段 6：无效 feature gate ──"

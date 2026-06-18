@@ -32,11 +32,15 @@ pub fn create_chat_model(config: &AgentConfig) -> Result<Box<dyn ChatModel>, Aet
                         config.provider
                     ))
                 })?;
-            Ok(Box::new(OpenAIProvider::new(
-                &api_key,
-                &config.model,
-                Some(&base_url),
-            )))
+            // H6: temperature / max_tokens 接线
+            let mut provider = OpenAIProvider::new(&api_key, &config.model, Some(&base_url));
+            if let Some(t) = config.temperature {
+                provider = provider.with_temperature(t);
+            }
+            if let Some(n) = config.max_tokens {
+                provider = provider.with_max_tokens(n);
+            }
+            Ok(Box::new(provider))
         }
         "anthropic" => {
             let base_url = config
@@ -54,11 +58,15 @@ pub fn create_chat_model(config: &AgentConfig) -> Result<Box<dyn ChatModel>, Aet
                 .base_url
                 .as_deref()
                 .unwrap_or("http://localhost:11434/v1");
-            Ok(Box::new(OpenAIProvider::new(
-                &api_key,
-                &config.model,
-                Some(base_url),
-            )))
+            // H6: temperature / max_tokens 接线
+            let mut provider = OpenAIProvider::new(&api_key, &config.model, Some(base_url));
+            if let Some(t) = config.temperature {
+                provider = provider.with_temperature(t);
+            }
+            if let Some(n) = config.max_tokens {
+                provider = provider.with_max_tokens(n);
+            }
+            Ok(Box::new(provider))
         }
         provider => Err(AetherError::ConfigError(format!(
             "不支持的供应商: {}。当前支持: openai / anthropic / deepseek / ollama",

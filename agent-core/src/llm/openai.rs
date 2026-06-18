@@ -14,6 +14,10 @@ pub struct OpenAIProvider {
     api_key: String,
     base_url: String,
     model: String,
+    /// H6: config.temperature 接线
+    temperature: Option<f32>,
+    /// H6: config.max_tokens 接线
+    max_tokens: Option<u32>,
 }
 
 impl OpenAIProvider {
@@ -29,7 +33,21 @@ impl OpenAIProvider {
             api_key: api_key.to_string(),
             base_url: base_url.unwrap_or("https://api.openai.com/v1").to_string(),
             model: model.to_string(),
+            temperature: None,
+            max_tokens: None,
         }
+    }
+
+    /// H6: 设置 temperature
+    pub fn with_temperature(mut self, t: f32) -> Self {
+        self.temperature = Some(t);
+        self
+    }
+
+    /// H6: 设置 max_tokens
+    pub fn with_max_tokens(mut self, n: u32) -> Self {
+        self.max_tokens = Some(n);
+        self
     }
 
     /// 获取 API 端点 URL
@@ -49,6 +67,14 @@ impl OpenAIProvider {
 
         if !tools.is_empty() {
             body["tools"] = serde_json::json!(tools);
+        }
+
+        // H6: config.temperature / max_tokens 接线
+        if let Some(t) = self.temperature {
+            body["temperature"] = serde_json::json!(t);
+        }
+        if let Some(n) = self.max_tokens {
+            body["max_tokens"] = serde_json::json!(n);
         }
 
         body

@@ -167,8 +167,10 @@ pub async fn run_conversation(
             if compression_enabled && messages.len() > 10 {
                 let current_tokens =
                     crate::compression::ContextCompressor::estimate_tokens(&messages);
-                // 默认上下文 128K，75% ≈ 96000 tokens
-                if current_tokens > 96000 {
+                // H6: 用 config.compression_threshold_ratio 替代硬编码
+                let threshold =
+                    (128000.0 * agent.config.compression_threshold_ratio) as u32;
+                if current_tokens > threshold {
                     info!(current_tokens, "触发上下文压缩");
                     match crate::compression::ContextCompressor::compress(&messages, 128000, model)
                         .await

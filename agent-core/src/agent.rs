@@ -289,8 +289,22 @@ impl AIAgent {
             );
             let user_msg = crate::types::message::Message::user(&message);
             let mut messages = vec![system_msg, user_msg];
+            let max_iter = config.max_iterations.max(1);
+            let mut iter_count = 0u32;
 
             loop {
+                // H2: 迭代上限熔断，防止 LLM 反复 tool_call 无限循环烧钱
+                iter_count += 1;
+                if iter_count > max_iter {
+                    let _ = tx
+                        .send(StreamEvent::Error(format!(
+                            "达到最大迭代次数 ({})，停止",
+                            max_iter
+                        )))
+                        .await;
+                    break;
+                }
+
                 let tool_defs = tools
                     .try_read()
                     .map(|r| r.get_definitions())

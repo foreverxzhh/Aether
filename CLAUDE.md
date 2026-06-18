@@ -50,6 +50,32 @@ bash scripts/self-audit.sh
 
 | 提交 | 被审计发现的问题 | 根因 |
 |------|-----------------|------|
-| pre-FIX_PATCH | 13 处隐性回退（MCP stderr、Delegate 占位、SSRF 字符串匹配、SecretString 缺失...） | 改完不自查 diff，编译器通过就交差 |
+| pre-FIX_PATCH | 13 处隐性回退 | 改完不自查 diff |
+| M1 (da68962) | 4 处真硬伤 (H1-H4) + 3 处习惯问题 (H5-H7) | acceptance 没当 checklist；RK 项列了不防 |
 
 如果你再被抓到同类问题，花公子会停用你。
+
+## Commit Message 规约（M2 起强制）
+
+每个 feat/fix commit 必须包含 3 段：
+
+### 实现段
+列改动的关键 file:line（不要只写"实现 X"）：
+- `agent-core/src/foo.rs:123` 添加 ...
+- `tests/integration.rs:45` 新增 mock-based test ...
+
+### 测试段（分类报）
+- **真测试**（mock + 行为验证）: N 个
+- **构造级测试**（仅 new + 断言非空）: M 个
+- **不要只报 "+K 通过"，要报质量分布**
+
+### 自审段
+- 新增 self-audit grep: N 条（acceptance 里有要求时必须）
+- self-audit.sh 全过: ✅ X + N 项
+
+## 编码铁律（M1 hotfix 后追加）
+
+7. **没做完不写解释性注释** — `// For now, X happens at Y level` 这种是大坑。改成 `unimplemented!("R-X.Y: do this")` 或 `#[cfg(feature = "foo")]`，**让编译器/运行时帮你抓**
+8. **V1_ROADMAP RK 项先写检查再写功能** — 如果 roadmap 在风险登记里点名某事，先在 self-audit 加 grep，再做实现
+9. **每个 PR 必改 CHANGELOG** — 哪怕一行 "Internal: refactored X"。breaking 改动必须显式标 `### Breaking`
+10. **deprecated 立刻标，不留双份逻辑** — 引入新 API 同时把旧 API 标 `#[deprecated(since = "...", note = "use X")]`，下一个 minor 版本删

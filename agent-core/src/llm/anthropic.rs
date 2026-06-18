@@ -137,15 +137,37 @@ impl AnthropicProvider {
             "messages": api_messages,
         });
 
-        // R-1.5: Anthropic prompt caching — cache_control for system / tools / stable messages
+        // H4: Anthropic prompt caching — 只给 stable 段加 cache_control
+        // 用 PromptBuilder::build_parts 拆分 stable/contextual/volatile
         if !sys_prompts.is_empty() {
-            body["system"] = serde_json::json!([
-                {
-                    "type": "text",
-                    "text": sys_prompts.join("\n"),
-                    "cache_control": { "type": "ephemeral" }
+            let full_system = sys_prompts.join("\n");
+            let parts = crate::prompt::PromptBuilder::build_parts(None, None, None);
+
+            let mut system_blocks: Vec<Value> = Vec::new();
+
+            // Stable 段 — cache_control
+            system_blocks.push(serde_json::json!({
+                "type": "text",
+                "text": parts.stable,
+                "cache_control": { "type": "ephemeral" }
+            }));
+
+            // Contextual + Volatile 段 — 不 cache（每 turn 变化）
+            let mut rest = parts.contextual;
+            if let Some(ref v) = parts.volatile {
+                if !v.is_empty() {
+                    rest.push_str("\n");
+                    rest.push_str(v);
                 }
-            ]);
+            }
+            if !rest.is_empty() {
+                system_blocks.push(serde_json::json!({
+                    "type": "text",
+                    "text": rest
+                }));
+            }
+
+            body["system"] = Value::Array(system_blocks);
         }
 
         if !tools.is_empty() {
@@ -209,12 +231,15 @@ impl AnthropicProvider {
             None => FinishReason::Stop,
         };
 
+        // H4: 真读 Anthropic cache token 统计
+        let cache_read = resp.usage.as_ref().and_then(|u| u.cache_read_input_tokens);
+        let cache_create = resp.usage.as_ref().and_then(|u| u.cache_creation_input_tokens);
         let usage = resp.usage.map(|u| TokenUsage {
             prompt_tokens: u.input_tokens,
             completion_tokens: u.output_tokens,
             total_tokens: u.input_tokens + u.output_tokens,
-            cache_read_tokens: None,
-            cache_creation_tokens: None,
+            cache_read_tokens: cache_read,
+            cache_creation_tokens: cache_create,
         });
 
         Ok(ModelResponse {
@@ -445,6 +470,10 @@ struct ContentBlock {
 struct AnthropicUsage {
     input_tokens: u32,
     output_tokens: u32,
+    #[serde(default)]
+    cache_creation_input_tokens: Option<u32>,
+    #[serde(default)]
+    cache_read_input_tokens: Option<u32>,
 }
 
 #[cfg(test)]

@@ -46,7 +46,8 @@ pub struct AgentConfig {
     pub disabled_toolsets: Vec<String>,
     /// 是否启用记忆
     pub memory_enabled: bool,
-    /// 记忆供应商
+    /// 记忆供应商（H6: 未实现可插拔，feature gate）
+    #[cfg(feature = "experimental_config")]
     pub memory_provider: String,
     /// 是否启用上下文压缩
     pub compression_enabled: bool,
@@ -56,7 +57,8 @@ pub struct AgentConfig {
     pub skills_enabled: bool,
     /// 是否启用委托（子 Agent）
     pub delegation_enabled: bool,
-    /// 最大并行子 Agent 数
+    /// 最大并行子 Agent 数（H6: delegate 尚未并发支持，feature gate）
+    #[cfg(feature = "experimental_config")]
     pub max_concurrent_children: u32,
     /// 最大委托深度
     pub max_spawn_depth: u32,
@@ -94,8 +96,8 @@ impl AgentConfig {
 
 impl std::fmt::Debug for AgentConfig {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("AgentConfig")
-            .field("provider", &self.provider)
+        let mut dbg = f.debug_struct("AgentConfig");
+        dbg.field("provider", &self.provider)
             .field("model", &self.model)
             .field(
                 "api_key",
@@ -109,17 +111,20 @@ impl std::fmt::Debug for AgentConfig {
             .field("enabled_toolsets", &self.enabled_toolsets)
             .field("disabled_toolsets", &self.disabled_toolsets)
             .field("memory_enabled", &self.memory_enabled)
-            .field("memory_provider", &self.memory_provider)
             .field("compression_enabled", &self.compression_enabled)
             .field("compression_threshold_ratio", &self.compression_threshold_ratio)
             .field("skills_enabled", &self.skills_enabled)
             .field("delegation_enabled", &self.delegation_enabled)
-            .field("max_concurrent_children", &self.max_concurrent_children)
             .field("max_spawn_depth", &self.max_spawn_depth)
             .field("session_id", &self.session_id)
             .field("profile", &self.profile)
-            .field("log_level", &self.log_level)
-            .finish()
+            .field("log_level", &self.log_level);
+        #[cfg(feature = "experimental_config")]
+        {
+            dbg.field("memory_provider", &self.memory_provider);
+            dbg.field("max_concurrent_children", &self.max_concurrent_children);
+        }
+        dbg.finish()
     }
 }
 
@@ -137,11 +142,13 @@ impl Default for AgentConfig {
             enabled_toolsets: vec!["core".to_string()],
             disabled_toolsets: Vec::new(),
             memory_enabled: true,
+            #[cfg(feature = "experimental_config")]
             memory_provider: "local".to_string(),
             compression_enabled: true,
             compression_threshold_ratio: 0.75,
             skills_enabled: true,
             delegation_enabled: true,
+            #[cfg(feature = "experimental_config")]
             max_concurrent_children: 3,
             max_spawn_depth: 2,
             session_id: None,
